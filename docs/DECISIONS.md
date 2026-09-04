@@ -55,3 +55,11 @@
 **Rationale:** Human authority must be protected without turning normal implementation judgment into a bottleneck.
 
 **Consequences:** In-scope defects lead to `AI_REWORK`; objective non-decision dependencies lead to `BLOCKED`.
+
+## D-008 — Separate portable protocol from execution runtime
+
+**Decision:** Keep the autonomy protocol scheduler-agnostic and separate from future execution adapters and schedulers/runtimes. Treat `NO_OP` as a successful protocol outcome, `BLOCKED` as persistent checkpoint state caused by an objective project dependency, and runtime failures as execution-layer outcomes that do not automatically mutate checkpoint state.
+
+**Rationale:** The governance contract defines what is authorized and must remain portable. Patterns validated against a prior real consumer implementation can inform that contract without importing consumer-specific product or infrastructure decisions.
+
+**Consequences:** Future adapters and runtimes may decide how and when to invoke evaluation, perform technical preflight and locking, and report execution results, but must not duplicate or redefine authority, states, gates, roadmap, or work-selection priorities. No particular scheduler, platform, command-line tool, or user interface is normative.

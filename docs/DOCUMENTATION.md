@@ -12,6 +12,8 @@ Versioned documents are persistent project memory. Put each fact in one authorit
 | `docs/WORK_QUEUE.md` | Minimal current checkpoint coordination; not requirements, architecture, or methodology. |
 | PR and commits | Reviewable change evidence and discussion tied to concrete Git objects. |
 
+The versioned governance documents form the portable contract that defines what is authorized. Future execution adapters and scheduler/runtimes are separate mechanisms for invoking that contract; they must link to it rather than duplicating its state machine or work-selection rules.
+
 ## Managed agent block
 
 The common block between the exact managed markers is replaced as a unit during adoption/synchronization. It must be sufficiently self-contained for a consumer whose agent has no memory of this repository. Consumer-specific commands, constraints, and facts remain outside the markers and must not be overwritten.

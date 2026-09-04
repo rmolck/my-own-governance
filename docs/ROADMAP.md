@@ -4,13 +4,16 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Establish the common baseline.
-- Define autonomy and `WORK_QUEUE` semantics.
-- Prepare adoption templates.
+- Close the reusable common baseline and adoption templates.
+- Reconcile the autonomous contract with patterns validated by a prior real consumer implementation.
+- Keep portable governance semantics clearly separated from any future execution runtime.
 
 ## Next
 
-- Configure and validate a CODEX heartbeat.
+- Define a portable automation-runtime contract without duplicating governance semantics.
+- Implement a Codex CLI execution adapter.
+- Implement a reference Linux runtime using systemd and a thin runner.
+- Validate scheduler-agnostic heartbeat evaluation.
 - Configure and validate an AI SUPERVISOR.
 - Execute acceptance tests.
 - Define reusable adoption and synchronization.
@@ -19,4 +22,5 @@ This is informative direction, not operational state. Current checkpoint state b
 
 - Add proportionate CI/hygiene for governance validation.
 - Provide safe synchronization with consumers.
-- Evaluate greater automation without assuming auto-merge.
+- Consider other schedulers and execution adapters.
+- Evaluate greater automation only when it preserves the same authority and safety guarantees, without assuming auto-merge.

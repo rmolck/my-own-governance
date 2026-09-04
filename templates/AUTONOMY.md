@@ -1,6 +1,8 @@
 # Autonomous work contract
 
-This is the normative contract for a future CODEX WORKER and AI SUPERVISOR. It defines authority and durable coordination; it does not install or authorize automation.
+This is the normative, scheduler-agnostic protocol for a future CODEX WORKER and AI SUPERVISOR. It defines authority and durable coordination; it does not install or authorize automation.
+
+The protocol defines **what** is authorized: authority, states, gates, transitions, work selection, continuity, review, Git policy, and `NO_OP`. It does not depend on a scheduler, operating system, agent command-line interface, automation service, or user interface.
 
 ## Authority of durable remote state
 
@@ -29,6 +31,10 @@ Reviews scope, correctness, diff, checks, documentation, architecture, evidence,
 - `AI_SUPERVISOR: HUMAN_REQUIRED`
 
 A top-level PR comment is sufficient; the protocol does not depend on formal GitHub review approval. The supervisor neither merges nor writes directly to `main`. It does not repeat a decision for the same HEAD unless a relevant change invalidates it. Correctable, in-scope problems require `AI_REWORK`, not human escalation. An approval means the reviewed HEAD may receive mechanical queue closure where allowed; it does not authorize merge.
+
+### GITHUB
+
+Provides the durable versioned state, Git objects, pull requests, comments, checks, and audit trail used by the protocol. It is an architectural persistence and traceability actor, not an intelligent agent and not a source of authority beyond the human and agent decisions it durably records.
 
 ## States and transitions
 
@@ -71,9 +77,15 @@ Use it for observable behavior, product requirements, significant architecture, 
 
 ## Objective blocking
 
-`BLOCKED` means an actual external, technical, access, environment, or evidence dependency prevents continuing the checkpoint. Record the cause and the evidence needed to revalidate it. A temporary model quota or capacity limit is not `BLOCKED`; that invocation ends and may be retried. Missing access is not automatically `HUMAN_REQUIRED`: absent a material choice, it is `BLOCKED`.
+`BLOCKED` is a persistent checkpoint state: an actual external, technical, access, environment, or evidence dependency prevents continuing the checkpoint. Record the cause and the evidence needed to revalidate it. Missing access is not automatically `HUMAN_REQUIRED`: absent a material choice, it is `BLOCKED`.
 
-## Future heartbeat selection
+`NO_OP` is a successful protocol outcome, not a checkpoint state and not an error. It means the current durable state was evaluated correctly but permits no autonomous transition—for example, no eligible work exists, a human gate remains unresolved, review awaits the supervisor, or an objective block persists.
+
+A runtime or execution failure belongs to the future invocation mechanism, not to checkpoint state. A launcher that cannot start, a temporary quota or capacity limit, an aborted process, a transient scheduler failure, a busy lock, or an adapter error must not automatically mutate a checkpoint to `BLOCKED`. Record `BLOCKED` only when an objective project dependency actually prevents checkpoint progress.
+
+## Scheduler-agnostic heartbeat selection
+
+A future heartbeat means “evaluate whether current versioned state permits an autonomous transition,” not “perform work every fixed interval.” How or when an execution mechanism invokes that evaluation is outside this protocol.
 
 After refreshing durable GitHub state and reconciling an active PR, one invocation processes at most one checkpoint/PR in this order:
 
@@ -87,6 +99,12 @@ After refreshing durable GitHub state and reconciling an active PR, one invocati
 8. `BLOCKED`: revalidate its cause; if it persists, `NO_OP`.
 
 If no work is authorized, return exactly `NO_OP`. Never invent work and avoid unnecessary parallel work.
+
+## Informative future execution layers
+
+The portable, versioned governance contract—including agent instructions, this protocol, project documentation, decisions, roadmap, and queue—defines what is authorized. A future agent-specific execution adapter may invoke a worker, but must not duplicate state, roadmap, or selection semantics. A future scheduler/runtime may decide when to evaluate, perform technical preflight and locking, invoke the adapter, capture its result, and log or exit; it must not make product, architecture, roadmap, priority, checkpoint, or state-meaning decisions.
+
+These layers are informative architecture only. This baseline neither requires nor implements any particular adapter, scheduler, service manager, automation platform, operating system, or user interface.
 
 ## Git and safety policy
 
