@@ -55,3 +55,11 @@
 **Rationale:** Human authority must be protected without turning normal implementation judgment into a bottleneck.
 
 **Consequences:** In-scope defects lead to `AI_REWORK`; objective non-decision dependencies lead to `BLOCKED`.
+
+## D-008 — Portable governance separated from execution
+
+**Decision:** Keep the autonomy contract independent of execution adapters and scheduler/runtime implementations, using the conceptual boundary `governance contract -> execution adapter -> scheduler/runtime`.
+
+**Rationale:** A reusable contract validated against a prior real consumer implementation must preserve one source for intelligence and authority while allowing different execution mechanisms.
+
+**Consequences:** Runners remain deliberately mechanical and do not duplicate states, priorities, roadmap, product, architecture, or semantic work selection. Codex CLI and systemd may become reference implementations but are not protocol requirements.

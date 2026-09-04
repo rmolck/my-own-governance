@@ -1,6 +1,6 @@
 # Autonomous work contract
 
-This is the normative contract for a future CODEX WORKER and AI SUPERVISOR. It defines authority and durable coordination; it does not install or authorize automation.
+This is the normative, scheduler/runner-agnostic contract for HUMAN OWNER, CODEX WORKER, AI SUPERVISOR, and GITHUB. It defines authority and durable coordination; it does not install or authorize automation and does not depend on any particular execution product, user interface, or scheduler.
 
 ## Authority of durable remote state
 
@@ -29,6 +29,22 @@ Reviews scope, correctness, diff, checks, documentation, architecture, evidence,
 - `AI_SUPERVISOR: HUMAN_REQUIRED`
 
 A top-level PR comment is sufficient; the protocol does not depend on formal GitHub review approval. The supervisor neither merges nor writes directly to `main`. It does not repeat a decision for the same HEAD unless a relevant change invalidates it. Correctable, in-scope problems require `AI_REWORK`, not human escalation. An approval means the reviewed HEAD may receive mechanical queue closure where allowed; it does not authorize merge.
+
+### GITHUB
+
+Provides durable persistence and traceability through branches, commits, PRs, comments/reviews, and checks. GITHUB is not an intelligent agent: it records evidence and coordination but neither decides what is authorized nor grants or expands the authority of HUMAN OWNER, CODEX WORKER, or AI SUPERVISOR.
+
+## Portable execution boundaries
+
+The minimum conceptual architecture is:
+
+`governance contract -> execution adapter -> scheduler/runtime`
+
+- The **governance contract** contains the intelligence, authority, states, gates, priorities, and semantic work selection defined here.
+- An **execution adapter** translates one invocation into the interface of a concrete agent without redefining governance.
+- A **scheduler/runtime** decides when to wake or evaluate and performs only execution mechanics.
+
+A future runner must remain deliberately simple. It must not duplicate checkpoint states, priorities, the roadmap, product or architecture decisions, or semantic checkpoint selection. Codex CLI, Codex Automations, GitHub Actions, systemd, cron, Windows Task Scheduler, and any other adapter, UI, scheduler, or runtime are possible implementations rather than normative protocol requirements.
 
 ## States and transitions
 
@@ -69,9 +85,11 @@ Do **not** use it for naming, local organization, test structure, small refactor
 
 Use it for observable behavior, product requirements, significant architecture, data model, compatibility, security, persistence, data-loss risk, credentials, production, irreversible operations, external contracts, a lack of evidence that forces an unsupported choice, business rules, relevant UX, or alternatives with materially different consequences.
 
-## Objective blocking
+## Outcomes and execution failures
 
-`BLOCKED` means an actual external, technical, access, environment, or evidence dependency prevents continuing the checkpoint. Record the cause and the evidence needed to revalidate it. A temporary model quota or capacity limit is not `BLOCKED`; that invocation ends and may be retried. Missing access is not automatically `HUMAN_REQUIRED`: absent a material choice, it is `BLOCKED`.
+- **`NO_OP`** is an invocation outcome, not a checkpoint state. It means the protocol evaluation completed validly but found no autonomous transition authorized by current durable state.
+- **`BLOCKED`** is a persistent checkpoint state. It means an objective external, technical, access, environment, or evidence dependency prevents checkpoint progress. Record the cause and evidence needed to revalidate it. Missing access is not automatically `HUMAN_REQUIRED`: absent a material choice, it is `BLOCKED`.
+- A **runtime/execution failure** means the evaluation mechanism did not complete correctly—for example, its launcher, scheduler, agent CLI, temporary quota, lock, or other transient mechanism failed. It is neither `NO_OP` nor a checkpoint state, and must not automatically mutate the checkpoint to `BLOCKED`; report or retry it according to the runtime's operational policy.
 
 ## Future heartbeat selection
 
@@ -86,7 +104,7 @@ After refreshing durable GitHub state and reconciling an active PR, one invocati
 7. `HUMAN_REQUIRED`: do not cross it; only clearly permitted independent work may proceed.
 8. `BLOCKED`: revalidate its cause; if it persists, `NO_OP`.
 
-If no work is authorized, return exactly `NO_OP`. Never invent work and avoid unnecessary parallel work.
+If a valid evaluation completes and no work is authorized, return exactly `NO_OP`. If evaluation cannot complete, report a runtime/execution failure instead. Never invent work and avoid unnecessary parallel work.
 
 ## Git and safety policy
 
