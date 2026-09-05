@@ -4,13 +4,10 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Close the reusable baseline.
-- Reconcile and stabilize the autonomous governance contract.
-- Separate governance from runtime concerns.
+- Define the portable automation-runtime contract while preserving the separation between governance and execution mechanics.
 
 ## Next
 
-- Define a portable automation-runtime contract.
 - Implement a Codex CLI execution adapter as a reference implementation.
 - Implement a reference Linux runtime using systemd.
 - Validate heartbeat behavior.

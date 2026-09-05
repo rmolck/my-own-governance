@@ -46,6 +46,8 @@ The minimum conceptual architecture is:
 
 A future runner must remain deliberately simple. It must not duplicate checkpoint states, priorities, the roadmap, product or architecture decisions, or semantic checkpoint selection. Codex CLI, Codex Automations, GitHub Actions, systemd, cron, Windows Task Scheduler, and any other adapter, UI, scheduler, or runtime are possible implementations rather than normative protocol requirements.
 
+The normative execution-layer interface, preflight, exclusion, result, exit, and observability requirements are defined in [`EXECUTION.md`](EXECUTION.md). That contract applies these governance semantics without creating a second state machine or work selector.
+
 ## States and transitions
 
 The complete state vocabulary is exactly:
