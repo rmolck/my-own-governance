@@ -4,18 +4,17 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Define the portable automation-runtime contract while preserving the separation between governance and execution mechanics.
+- Implement a Codex CLI execution adapter as a reference implementation.
 
 ## Next
 
-- Implement a Codex CLI execution adapter as a reference implementation.
 - Implement a reference Linux runtime using systemd.
 - Validate heartbeat behavior.
 - Configure and validate an AI SUPERVISOR.
 - Execute acceptance tests.
 - Define reusable adoption and synchronization.
 
-Codex CLI and systemd are future reference implementations, not normative requirements of the portable autonomy protocol.
+Codex CLI and systemd reference implementations are not normative requirements of the portable autonomy protocol.
 
 ## Later
 

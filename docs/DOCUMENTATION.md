@@ -11,6 +11,7 @@ Versioned documents are persistent project memory. Put each fact in one authorit
 | `docs/ROADMAP.md` | Informative direction: now, next, later; not live checkpoint status. |
 | `docs/DECISIONS.md` | Consequential decisions, rationale, and consequences; not trivial implementation choices. |
 | `docs/WORK_QUEUE.md` | Minimal current checkpoint coordination; not requirements, architecture, or methodology. |
+| `adapter/README.md` | Codex CLI reference adapter input/output, operational usage, exit semantics, and responsibility boundary. |
 | PR and commits | Reviewable change evidence and discussion tied to concrete Git objects. |
 
 ## Managed agent block
