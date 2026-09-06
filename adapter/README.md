@@ -61,5 +61,6 @@ The worker, guided by fresh durable repository state, performs semantic
 selection and authorized work. The adapter only starts and waits for one Codex
 process and records technical evidence. Scheduling, periodic execution,
 cross-invocation locking, retry policy, systemd integration, merge, and
-auto-merge are outside this implementation. A reference Linux systemd runtime
-is planned separately.
+auto-merge are outside this adapter. The separate
+[`runtime/`](../runtime/README.md) reference composes this adapter with Linux
+locking and systemd without moving those responsibilities into this layer.
