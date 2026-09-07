@@ -1,10 +1,17 @@
 import json
 from pathlib import Path
 import subprocess
+from unittest import mock
 import tempfile
 import unittest
 
-from validation.heartbeat_harness import NO_OP, TRANSITION_COMPLETED, evaluate, evaluate_remote
+from validation.heartbeat_harness import (
+    FreshnessError,
+    NO_OP,
+    TRANSITION_COMPLETED,
+    evaluate,
+    evaluate_fresh_checkout,
+)
 
 
 def checkpoint(identifier, state, gate="AI", **extra):
@@ -79,38 +86,112 @@ class HeartbeatSemanticsTest(unittest.TestCase):
                                                                resolution="durably recorded")]})
                 self.assertEqual(result["transition"], expected)
 
-    def test_h12_fresh_remote_state_overrides_stale_checkout_and_memories(self):
+    def make_stale_remote_fixture(self, root):
+        remote = root / "durable.git"
+        writer = root / "writer"
+        checkout = root / "stale"
+        subprocess.run(["git", "init", "--bare", "--quiet", str(remote)], check=True)
+        subprocess.run(
+            ["git", "clone", "--quiet", str(remote), str(writer)], check=True
+        )
+        for key, value in (("user.name", "Fixture"),
+                           ("user.email", "fixture@example.invalid")):
+            subprocess.run(
+                ["git", "-C", str(writer), "config", key, value], check=True
+            )
+        stale = {"checkpoints": [checkpoint("stale-ready", "READY")],
+                 "previous_output": "work was once authorized",
+                 "example": "READY", "agent_memory": "select stale-ready"}
+        path = writer / "heartbeat-state.json"
+        path.write_text(json.dumps(stale))
+        subprocess.run(["git", "-C", str(writer), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(writer), "commit", "--quiet", "-m", "stale"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(writer), "push", "--quiet", "origin", "HEAD:main"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(remote), "symbolic-ref", "HEAD", "refs/heads/main"],
+            check=True,
+        )
+        subprocess.run(["git", "clone", "--quiet", str(remote), str(checkout)], check=True)
+        path.write_text(json.dumps({"checkpoints": [checkpoint("durable", "DONE")]}))
+        subprocess.run(
+            ["git", "-C", str(writer), "commit", "--quiet", "-am", "fresh"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(writer), "push", "--quiet", "origin", "HEAD:main"],
+            check=True,
+        )
+        return remote, checkout
+
+    def test_h12_updates_stale_remote_tracking_ref_before_evaluation(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            remote = root / "durable.git"
-            writer = root / "writer"
-            subprocess.run(["git", "init", "--bare", "--quiet", str(remote)], check=True)
-            subprocess.run(["git", "clone", "--quiet", str(remote), str(writer)], check=True)
-            subprocess.run(["git", "-C", str(writer), "config", "user.name", "Fixture"], check=True)
-            subprocess.run(["git", "-C", str(writer), "config", "user.email", "fixture@example.invalid"], check=True)
-            stale = {"checkpoints": [checkpoint("stale-ready", "READY")],
-                     "previous_output": "work was once authorized",
-                     "example": "READY", "agent_memory": "select stale-ready"}
-            path = writer / "heartbeat-state.json"
-            path.write_text(json.dumps(stale))
-            subprocess.run(["git", "-C", str(writer), "add", "."], check=True)
-            subprocess.run(["git", "-C", str(writer), "commit", "--quiet", "-m", "stale"], check=True)
-            subprocess.run(["git", "-C", str(writer), "push", "--quiet", "origin", "HEAD:main"], check=True)
-            subprocess.run(["git", "-C", str(remote), "symbolic-ref", "HEAD", "refs/heads/main"], check=True)
-            stale_checkout = root / "stale"
-            subprocess.run(["git", "clone", "--quiet", str(remote), str(stale_checkout)], check=True)
-            path.write_text(json.dumps({"checkpoints": [checkpoint("durable", "DONE")]}))
-            subprocess.run(["git", "-C", str(writer), "commit", "--quiet", "-am", "fresh"], check=True)
-            subprocess.run(["git", "-C", str(writer), "push", "--quiet", "origin", "HEAD:main"], check=True)
-            self.assertEqual(json.loads((stale_checkout / "heartbeat-state.json").read_text())
-                             ["checkpoints"][0]["state"], "READY")
-            state, result = evaluate_remote(remote)
-            self.assertEqual(state["checkpoints"][0]["state"], "DONE")
+            _, checkout = self.make_stale_remote_fixture(Path(directory))
+            stale_sha = subprocess.check_output(
+                ["git", "-C", str(checkout), "rev-parse", "refs/remotes/origin/main"],
+                text=True,
+            ).strip()
+            evidence, result = evaluate_fresh_checkout(checkout)
+            self.assertEqual(evidence["local_before"], stale_sha)
+            self.assertNotEqual(evidence["remote_sha"], stale_sha)
+            self.assertEqual(evidence["local_after"], evidence["remote_sha"])
             self.assertEqual(result["outcome"], NO_OP)
 
-    def test_h12_unresolvable_durable_state_is_execution_failure_not_no_op(self):
-        with self.assertRaisesRegex(RuntimeError, "durable state unavailable"):
-            evaluate_remote(Path("/definitely/missing/durable.git"))
+    def test_h12_unreachable_remote_is_execution_failure_without_selection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            _, checkout = self.make_stale_remote_fixture(Path(directory))
+            subprocess.run(["git", "-C", str(checkout), "remote", "set-url", "origin",
+                            str(Path(directory) / "missing.git")], check=True)
+            with mock.patch("validation.heartbeat_harness.evaluate") as selection:
+                with self.assertRaisesRegex(FreshnessError, "git ls-remote"):
+                    evaluate_fresh_checkout(checkout)
+                selection.assert_not_called()
+
+    def test_h12_directed_fetch_failure_does_not_use_stale_ref(self):
+        calls = []
+        def runner(command, **kwargs):
+            calls.append(command)
+            operation = command[3]
+            if operation == "ls-remote":
+                return subprocess.CompletedProcess(
+                    command, 0, "b" * 40 + "\trefs/heads/main\n", ""
+                )
+            if operation == "rev-parse":
+                return subprocess.CompletedProcess(command, 0, "a" * 40 + "\n", "")
+            return subprocess.CompletedProcess(command, 1, "", "simulated fetch denial")
+        with mock.patch("validation.heartbeat_harness.evaluate") as selection:
+            with self.assertRaisesRegex(FreshnessError, "git fetch"):
+                evaluate_fresh_checkout(Path("fixture"), runner)
+            selection.assert_not_called()
+        self.assertTrue(
+            any("+refs/heads/main:refs/remotes/origin/main" in c for c in calls)
+        )
+
+    def test_h12_unupdated_tracking_ref_mismatch_prevents_selection(self):
+        remote_sha, stale_sha = "b" * 40, "a" * 40
+        rev_parse_count = 0
+        def runner(command, **kwargs):
+            nonlocal rev_parse_count
+            operation = command[3]
+            if operation == "ls-remote":
+                return subprocess.CompletedProcess(command, 0,
+                                                   f"{remote_sha}\trefs/heads/main\n", "")
+            if operation == "fetch":
+                return subprocess.CompletedProcess(command, 0, "", "")
+            if operation == "rev-parse":
+                rev_parse_count += 1
+                return subprocess.CompletedProcess(command, 0, stale_sha + "\n", "")
+            self.fail("durable state was read before freshness was established")
+        with mock.patch("validation.heartbeat_harness.evaluate") as selection:
+            with self.assertRaisesRegex(FreshnessError, "origin/main mismatch"):
+                evaluate_fresh_checkout(Path("fixture"), runner)
+            selection.assert_not_called()
+        self.assertEqual(rev_parse_count, 2)
 
     def test_h13_pr_continuity_wins_after_baseline_advance(self):
         result = evaluate({"checkpoints": [checkpoint("existing", "WORKING", pr=13,

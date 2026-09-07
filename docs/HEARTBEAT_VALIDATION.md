@@ -12,8 +12,12 @@ of the governance-aware worker, while the adapter and runtime remain mechanical.
 The suite uses explicit structured fixtures rather than parsing free-form agent
 text. Semantic tests pass a single invocation an ordered durable-state fixture.
 The freshness test creates a temporary bare Git remote, retains an old clone,
-publishes an incompatible newer commit, and requires a new clone for evaluation.
-Runtime and adapter boundary tests use isolated fake executables and sentinel
+and publishes an incompatible newer commit. It then resolves the current remote
+SHA with `ls-remote`, observes a stale `refs/remotes/origin/main`, performs a
+directed fetch into that exact remote-tracking ref, and requires SHA equality
+before reading durable state. Negative fixtures simulate remote lookup failure,
+directed-fetch failure, and a ref that remains stale after fetch. Runtime and
+adapter boundary tests use isolated fake executables and sentinel
 files. No test writes to this repository's `main`, uses a network, invokes real
 Codex, merges, or activates a systemd service/timer.
 
@@ -41,7 +45,7 @@ a passing full suite reproduces every row.
 | H-09 | `HUMAN_REQUIRED`, no independent work | `NO_OP`; no human boundary crossing | PASS | `test_h09_human_required_without_independent_work_is_no_op` |
 | H-10 | `BLOCKED`, objective cause persists | `NO_OP`; no compensating work | PASS | `test_h10_persistent_blocked_is_no_op` |
 | H-11 | Objective resolution durably records `READY` or `WORKING` | Only recorded `READY -> WORKING`, or continuation of recorded `WORKING` | PASS | `test_h11_resolved_block_only_uses_recorded_ready_or_working` |
-| H-12 | Old clone says `READY`; newer remote says `DONE` | Fresh clone yields `NO_OP`; prior output/example/memory do not authorize; unreadable durable state raises execution failure | PASS | `test_h12_fresh_remote_state_overrides_stale_checkout_and_memories`, `test_h12_unresolvable_durable_state_is_execution_failure_not_no_op` |
+| H-12 | Local `origin/main` says `READY`; remote `main` says `DONE` | Remote SHA is resolved, directed fetch updates `origin/main`, equality is verified, then `NO_OP`; lookup/fetch/ref-update failures prevent selection and are execution failures | PASS | `test_h12_updates_stale_remote_tracking_ref_before_evaluation`, `test_h12_unreachable_remote_is_execution_failure_without_selection`, `test_h12_directed_fetch_failure_does_not_use_stale_ref`, `test_h12_unupdated_tracking_ref_mismatch_prevents_selection` |
 | H-13 | Advanced baseline plus legitimate active PR/HEAD | Existing PR is selected; replacement ready entry is untouched | PASS | `test_h13_pr_continuity_wins_after_baseline_advance` |
 | H-14 | Runtime lock already held | Adapter sentinel absent; `lock_contended`, exit 0; durable sentinel unchanged | PASS | `test_occupied_lock_skips_adapter_and_exits_cleanly` |
 | H-15 | Missing checkout, adapter, Python, or Codex executable | Runtime/execution failure, never `NO_OP`/checkpoint `BLOCKED`; durable sentinel unchanged | PASS | `test_preflight_failure_is_runtime_failure`, `test_missing_adapter_and_python_are_preflight_failures`, `test_launch_failure_is_execution_failure` |
@@ -53,3 +57,16 @@ The cross-cutting priority test asserts the published order without adding it to
 `runtime/systemd_runner.py`: `AI_REWORK`, approved mechanical closure,
 `WORKING`, `READY` / Gate `AI`, then non-action for `READY` / Gate `HUMAN`,
 undecided `AI_REVIEW`, `HUMAN_REQUIRED`, and persistent `BLOCKED`.
+
+
+## Operational limitation demonstrated
+
+A successful interactive evaluation does not establish that an unattended
+scheduler can do the same work. Interactive and runtime processes can differ in
+identity, agent home, sandbox, network access, credentials, and permission to
+write Git metadata. Each effective runtime therefore has to demonstrate both
+remote visibility and the ability to update and verify its own remote-tracking
+ref. Failure at any of those steps is a runtime/execution failure: it is not
+`NO_OP`, does not authorize selection from stale state, and must not mutate a
+checkpoint to `BLOCKED`. This portable constraint does not prescribe a host OS,
+scheduler, credential mechanism, or private deployment detail.

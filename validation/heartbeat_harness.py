@@ -12,12 +12,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import subprocess
-import tempfile
-from typing import Any
+from typing import Any, Callable
 
 
 TRANSITION_COMPLETED = "Transition completed"
 NO_OP = "NO_OP"
+CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
+
+
+class FreshnessError(RuntimeError):
+    """Fresh durable state could not be established; evaluation is invalid."""
 
 
 def _approved_for_head(checkpoint: dict[str, Any]) -> bool:
@@ -66,21 +70,49 @@ def evaluate(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def evaluate_remote(remote: Path) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Clone the durable fixture afresh, then evaluate its structured state."""
-    with tempfile.TemporaryDirectory() as directory:
-        checkout = Path(directory) / "fresh"
-        completed = subprocess.run(
-            ["git", "clone", "--quiet", str(remote), str(checkout)],
-            capture_output=True,
-            text=True,
-            check=False,
+def _run_git(runner: CommandRunner, checkout: Path, *arguments: str) -> str:
+    completed = runner(
+        ["git", "-C", str(checkout), *arguments],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode:
+        raise FreshnessError(
+            f"fresh durable state unavailable during git {arguments[0]}"
         )
-        if completed.returncode:
-            raise RuntimeError(f"durable state unavailable: {completed.stderr.strip()}")
-        state_path = checkout / "heartbeat-state.json"
-        if not state_path.is_file():
-            raise RuntimeError("durable state unavailable: heartbeat-state.json missing")
-        state = json.loads(state_path.read_text(encoding="utf-8"))
-        observed = evaluate(state)
-        return state, observed
+    return completed.stdout.strip()
+
+
+def evaluate_fresh_checkout(
+    checkout: Path, runner: CommandRunner = subprocess.run
+) -> tuple[dict[str, str], dict[str, Any]]:
+    """Verify and update origin/main before reading and evaluating durable state."""
+    remote_output = _run_git(
+        runner, checkout, "ls-remote", "--exit-code", "origin", "refs/heads/main"
+    )
+    fields = remote_output.split()
+    if len(fields) != 2 or fields[1] != "refs/heads/main":
+        raise FreshnessError("fresh durable state unavailable: invalid ls-remote result")
+    remote_sha = fields[0]
+    local_before = _run_git(runner, checkout, "rev-parse", "refs/remotes/origin/main")
+    _run_git(
+        runner,
+        checkout,
+        "fetch",
+        "--no-tags",
+        "origin",
+        "+refs/heads/main:refs/remotes/origin/main",
+    )
+    local_after = _run_git(runner, checkout, "rev-parse", "refs/remotes/origin/main")
+    if local_after != remote_sha:
+        raise FreshnessError("fresh durable state unavailable: origin/main mismatch")
+    serialized = _run_git(
+        runner, checkout, "show", "refs/remotes/origin/main:heartbeat-state.json"
+    )
+    state = json.loads(serialized)
+    return {
+        "remote_sha": remote_sha,
+        "local_before": local_before,
+        "local_after": local_after,
+    }, evaluate(state)
