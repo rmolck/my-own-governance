@@ -4,11 +4,10 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Implement the delegated-merge autonomy contract. (GOV-006 is in AI review.)
+- Configure and validate an AI SUPERVISOR under the delegated-merge contract.
 
 ## Next
 
-- Configure and validate an AI SUPERVISOR under the delegated-merge contract.
 - Execute acceptance tests.
 - Define reusable adoption and synchronization.
 
