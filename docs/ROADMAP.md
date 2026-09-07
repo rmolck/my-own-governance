@@ -4,12 +4,10 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Implement a reference Linux runtime using systemd. (Completed as GOV-004;
-  pending independent review.)
+- Validate heartbeat behavior. (Completed as GOV-005; pending independent review.)
 
 ## Next
 
-- Validate heartbeat behavior.
 - Configure and validate an AI SUPERVISOR.
 - Execute acceptance tests.
 - Define reusable adoption and synchronization.
