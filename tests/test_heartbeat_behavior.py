@@ -81,6 +81,12 @@ class HeartbeatSemanticsTest(unittest.TestCase):
         item = checkpoint(
             "review", "AI_REVIEW", head="closure-head", approved_base="head-a", pr=8,
             closure_parent="head-a", closure_files=["docs/WORK_QUEUE.md"],
+            closure_changes=[
+                {"checkpoint": "review", "field": "state",
+                 "before": "AI_REVIEW", "after": "DONE"},
+                {"checkpoint": "review", "field": "last_relevant_result",
+                 "after": {"decision": "AI_SUPERVISOR: APPROVED", "head": "head-a"}},
+            ],
             decision={"value": "AI_SUPERVISOR: APPROVED", "head": "head-a", "pr": 8},
         )
         result = evaluate({"checkpoints": [item]})
@@ -94,6 +100,34 @@ class HeartbeatSemanticsTest(unittest.TestCase):
                 item = checkpoint(
                     "review", "AI_REVIEW", head="head-b", approved_base="head-a", pr=8,
                     closure_parent="head-a", closure_files=["docs/WORK_QUEUE.md", path],
+                    closure_changes=[{"checkpoint": "review", "field": "state",
+                                      "before": "AI_REVIEW", "after": "DONE"}],
+                    decision={"value": "AI_SUPERVISOR: APPROVED", "head": "head-a", "pr": 8},
+                )
+                result = evaluate({"checkpoints": [item]})
+                self.assertTrue(result["semantic_done"])
+                self.assertFalse(result["merge_authorized"])
+                self.assertFalse(result["merge"])
+
+    def test_h08_queue_only_substantive_closure_invalidates_authorization(self):
+        forbidden_changes = (
+            {"checkpoint": "other", "field": "state",
+             "before": "READY", "after": "WORKING"},
+            {"checkpoint": "review", "field": "priority", "after": 1},
+            {"checkpoint": "review", "field": "gate", "after": "HUMAN"},
+            {"checkpoint": "review", "field": "objective", "after": "different work"},
+            {"checkpoint": "review", "field": "dependencies", "after": []},
+            {"checkpoint": "review", "field": "last_relevant_result",
+             "after": {"decision": "unverified", "head": "head-a"}},
+        )
+        valid_state_change = {"checkpoint": "review", "field": "state",
+                              "before": "AI_REVIEW", "after": "DONE"}
+        for forbidden in forbidden_changes:
+            with self.subTest(field=forbidden["field"], checkpoint=forbidden["checkpoint"]):
+                item = checkpoint(
+                    "review", "AI_REVIEW", head="closure-head", approved_base="head-a", pr=8,
+                    closure_parent="head-a", closure_files=["docs/WORK_QUEUE.md"],
+                    closure_changes=[valid_state_change, forbidden],
                     decision={"value": "AI_SUPERVISOR: APPROVED", "head": "head-a", "pr": 8},
                 )
                 result = evaluate({"checkpoints": [item]})

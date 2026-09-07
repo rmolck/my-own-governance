@@ -59,6 +59,45 @@ def _valid_approval(checkpoint: dict[str, Any]) -> dict[str, Any] | None:
     )
 
 
+def _valid_closure_content(
+    checkpoint: dict[str, Any], approval: dict[str, Any]
+) -> bool:
+    """Validate a structured description of the complete queue-only diff."""
+    changes = checkpoint.get("closure_changes")
+    if not isinstance(changes, list) or not changes:
+        return False
+    state_changes = [change for change in changes if change.get("field") == "state"]
+    if state_changes != [{
+        "checkpoint": checkpoint["id"],
+        "field": "state",
+        "before": "AI_REVIEW",
+        "after": "DONE",
+    }]:
+        return False
+    result_changes = [
+        change for change in changes
+        if change.get("field") == "last_relevant_result"
+    ]
+    if len(changes) not in (1, 2) or len(result_changes) > 1:
+        return False
+    allowed_result = {
+        "decision": "AI_SUPERVISOR: APPROVED",
+        "head": approval["head"],
+    }
+    return all(
+        change.get("checkpoint") == checkpoint["id"]
+        and (
+            change == state_changes[0]
+            or (
+                change.get("field") == "last_relevant_result"
+                and change.get("after") == allowed_result
+                and set(change) == {"checkpoint", "field", "after"}
+            )
+        )
+        for change in changes
+    )
+
+
 def _finalization(checkpoint: dict[str, Any]) -> dict[str, Any]:
     """Model only the observable, mechanical checks—not governance decisions."""
     approval = _valid_approval(checkpoint)
@@ -69,6 +108,7 @@ def _finalization(checkpoint: dict[str, Any]) -> dict[str, Any]:
         or (
             checkpoint.get("closure_parent") == approval.get("head")
             and closure_files <= MECHANICAL_CLOSURE_ALLOWLIST
+            and _valid_closure_content(checkpoint, approval)
         )
     ) if approval else False
     authorized = semantic_done and closure_valid and checkpoint.get("legitimate_pr", True)
