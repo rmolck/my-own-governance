@@ -103,17 +103,28 @@ def _finalization(checkpoint: dict[str, Any]) -> dict[str, Any]:
     approval = _valid_approval(checkpoint)
     semantic_done = checkpoint.get("gate") == "AI" and approval is not None
     closure_files = set(checkpoint.get("closure_files", []))
+    closure_attempted = bool(
+        closure_files
+        or checkpoint.get("closure_changes")
+        or checkpoint.get("closure_parent")
+        or (approval and checkpoint.get("head") != approval.get("head"))
+    )
     closure_valid = (
-        not closure_files
-        or (
-            checkpoint.get("closure_parent") == approval.get("head")
+        (
+            bool(closure_files)
+            and checkpoint.get("closure_parent") == approval.get("head")
             and closure_files <= MECHANICAL_CLOSURE_ALLOWLIST
             and _valid_closure_content(checkpoint, approval)
         )
     ) if approval else False
-    authorized = semantic_done and closure_valid and checkpoint.get("legitimate_pr", True)
+    authorized = (
+        semantic_done
+        and checkpoint.get("legitimate_pr", True)
+        and (not closure_attempted or closure_valid)
+    )
     executable = (
         authorized
+        and closure_valid
         and checkpoint.get("mergeable", True)
         and checkpoint.get("checks_satisfied", True)
         and not checkpoint.get("human_reserved", False)
@@ -154,7 +165,8 @@ def evaluate(state: dict[str, Any]) -> dict[str, Any]:
     if selected is None:
         return {"outcome": NO_OP, "checkpoint": None, "transition": None,
                 "pr": None, "merge": False, "merge_authorized": False,
-                "semantic_done": False, "auto_merge": False}
+                "merge_executable": False, "semantic_done": False,
+                "auto_merge": False}
 
     if transition:
         selected["state"] = transition[1]
@@ -170,6 +182,7 @@ def evaluate(state: dict[str, Any]) -> dict[str, Any]:
         "head": selected.get("head"),
         "merge": finalization.get("merge_executable", False),
         "merge_authorized": finalization.get("merge_authorized", False),
+        "merge_executable": finalization.get("merge_executable", False),
         "semantic_done": finalization.get("semantic_done", False),
         "auto_merge": False,
     }

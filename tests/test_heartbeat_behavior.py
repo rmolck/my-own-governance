@@ -59,7 +59,7 @@ class HeartbeatSemanticsTest(unittest.TestCase):
     def test_h06_ai_review_without_decision_is_no_op(self):
         self.assert_no_op([checkpoint("review", "AI_REVIEW", head="b")])
 
-    def test_h07_current_approval_semantically_completes_and_authorizes_merge(self):
+    def test_h07_current_approval_authorizes_but_awaits_durable_closure(self):
         items = [checkpoint("review", "AI_REVIEW", head="b",
                             pr=7, decision={"value": "AI_SUPERVISOR: APPROVED",
                                             "head": "b", "pr": 7}),
@@ -68,8 +68,9 @@ class HeartbeatSemanticsTest(unittest.TestCase):
         self.assertIsNone(result["transition"])
         self.assertTrue(result["semantic_done"])
         self.assertTrue(result["merge_authorized"])
-        self.assertTrue(result["merge"])
-        self.assertEqual(items[0]["state"], "DONE")
+        self.assertFalse(result["merge_executable"])
+        self.assertFalse(result["merge"])
+        self.assertEqual(items[0]["state"], "AI_REVIEW")
         self.assertEqual(items[1]["state"], "READY")
 
     def test_h08_stale_approval_does_not_close_new_head(self):
@@ -91,6 +92,7 @@ class HeartbeatSemanticsTest(unittest.TestCase):
         )
         result = evaluate({"checkpoints": [item]})
         self.assertTrue(result["merge_authorized"])
+        self.assertTrue(result["merge_executable"])
         self.assertTrue(result["merge"])
 
     def test_h08_non_allowlisted_closure_invalidates_authorization(self):
@@ -107,6 +109,7 @@ class HeartbeatSemanticsTest(unittest.TestCase):
                 result = evaluate({"checkpoints": [item]})
                 self.assertTrue(result["semantic_done"])
                 self.assertFalse(result["merge_authorized"])
+                self.assertFalse(result["merge_executable"])
                 self.assertFalse(result["merge"])
 
     def test_h08_queue_only_substantive_closure_invalidates_authorization(self):
@@ -133,6 +136,7 @@ class HeartbeatSemanticsTest(unittest.TestCase):
                 result = evaluate({"checkpoints": [item]})
                 self.assertTrue(result["semantic_done"])
                 self.assertFalse(result["merge_authorized"])
+                self.assertFalse(result["merge_executable"])
                 self.assertFalse(result["merge"])
 
     def test_h08_gate_human_never_receives_delegated_merge(self):
