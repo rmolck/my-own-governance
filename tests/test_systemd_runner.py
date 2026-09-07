@@ -34,6 +34,8 @@ class SystemdRunnerTest(unittest.TestCase):
         self.adapter.write_text(FAKE_ADAPTER)
         self.adapter.chmod(self.adapter.stat().st_mode | stat.S_IXUSR)
         self.lock = self.directory / "runtime.lock"
+        self.durable = self.repository / "checkpoint-state"
+        self.durable.write_text("WORKING")
         self.env = os.environ | {
             "GOVERNANCE_REPOSITORY": str(self.repository),
             "GOVERNANCE_ADAPTER": str(self.adapter),
@@ -79,6 +81,7 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertFalse(summary["lock_acquired"])
         self.assertFalse(summary["adapter_launched"])
         self.assertEqual(summary["classification"], "lock_contended")
+        self.assertEqual(self.durable.read_text(), "WORKING")
 
     def test_adapter_execution_failure_is_propagated(self):
         result = self.invoke(70)
@@ -93,6 +96,7 @@ class SystemdRunnerTest(unittest.TestCase):
                 self.assertEqual(result.returncode, code)
                 self.assertEqual(self.summary(result)["classification"],
                                  "interrupted_invalid")
+                self.assertEqual(self.durable.read_text(), "WORKING")
 
     def test_unknown_adapter_status_maps_to_invalid(self):
         result = self.invoke(9)
@@ -107,6 +111,20 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertEqual(result.returncode, 70)
         self.assertFalse(self.summary(result)["adapter_launched"])
         self.assertEqual(self.summary(result)["classification"], "preflight_failure")
+
+    def test_missing_adapter_and_python_are_preflight_failures(self):
+        cases = (
+            {"GOVERNANCE_ADAPTER": str(self.directory / "missing-adapter")},
+            {"GOVERNANCE_PYTHON": str(self.directory / "missing-python")},
+        )
+        for override in cases:
+            with self.subTest(override=override):
+                result = self.invoke(env=self.env | override)
+                self.assertEqual(result.returncode, 70)
+                summary = self.summary(result)
+                self.assertEqual(summary["classification"], "preflight_failure")
+                self.assertFalse(summary["adapter_launched"])
+                self.assertEqual(self.durable.read_text(), "WORKING")
 
     def test_interface_has_no_semantic_arguments(self):
         result = subprocess.run(
