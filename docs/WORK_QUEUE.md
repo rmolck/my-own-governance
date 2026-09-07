@@ -10,4 +10,6 @@ Operational coordination for this repository only. Requirements and governance r
 | GOV-004 | Implement a reference Linux runtime using systemd. | GOV-003 `DONE`; [`EXECUTION.md`](EXECUTION.md); existing [`adapter`](../adapter/README.md). | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on HEAD `fa65e3b45b121bd42f6bdb6691cad68968f178ff`; HUMAN OWNER authorized merge of PR #7. |
 | GOV-005 | Validate heartbeat behavior reproducibly against the autonomous and execution contracts. | GOV-004 `DONE`; [`AUTONOMY.md`](AUTONOMY.md); [`EXECUTION.md`](EXECUTION.md). | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on HEAD `72624d4d39c2481f6dee39e70749b7bdd0f55267`; HUMAN OWNER authorized merge of PR #8. |
 
+| GOV-006 | Simplify approval closure and delegate Gate-AI merge authorization to the AI SUPERVISOR. | GOV-001..GOV-005 `DONE`; explicit HUMAN OWNER authorization in the originating task; [`AUTONOMY.md`](AUTONOMY.md); [`EXECUTION.md`](EXECUTION.md). | DONE | AI | `codex/crear-checkpoint-gov-006` / PR #9 | `AI_SUPERVISOR: APPROVED` on HEAD `1d4e6537d7c539270870a37bfccf5e33adf2ef2b`. |
+
 Future work enters only with a concise objective, objective dependencies, one normative state, one gate, active work identity when present, and the last relevant durable result. Detailed requirements must be linked, not copied here.

@@ -4,11 +4,11 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Validate heartbeat behavior. (Completed as GOV-005; pending independent review.)
+- Implement the delegated-merge autonomy contract. (GOV-006 is in AI review.)
 
 ## Next
 
-- Configure and validate an AI SUPERVISOR.
+- Configure and validate an AI SUPERVISOR under the delegated-merge contract.
 - Execute acceptance tests.
 - Define reusable adoption and synchronization.
 
@@ -18,5 +18,4 @@ Codex CLI and systemd reference implementations are not normative requirements o
 
 - Add proportionate CI/hygiene for governance validation.
 - Provide safe synchronization with consumers.
-- Evaluate other execution adapters and schedulers.
-- Evaluate greater automation without assuming auto-merge.
+- Evaluate other execution adapters, schedulers, and mechanical finalizers.

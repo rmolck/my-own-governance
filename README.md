@@ -24,7 +24,7 @@ The organizing rule is **common where stable, local where specific**. Product re
 
 The intended flow is:
 
-`HUMAN OWNER → GitHub durable state → CODEX WORKER → branch/commit/PR → AI_REVIEW → AI SUPERVISOR → APPROVED / AI_REWORK / HUMAN_REQUIRED → CODEX WORKER resumes → HUMAN OWNER authorizes merges and material decisions`
+`HUMAN OWNER → GitHub durable state → CODEX WORKER → branch/commit/PR → AI_REVIEW → AI SUPERVISOR → APPROVED / AI_REWORK / HUMAN_REQUIRED → safeguarded mechanical finalization for approved Gate-AI work; HUMAN OWNER retains Gate-HUMAN and material decisions`
 
 The repository establishes only the documentary contract. It does **not** configure Codex or ChatGPT automation, GitHub Actions, scheduled jobs, daemons, external infrastructure, auto-merge, or production access.
 

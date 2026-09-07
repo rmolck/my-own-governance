@@ -40,8 +40,8 @@ a passing full suite reproduces every row.
 | H-04 | `AI_REWORK` plus `READY` / Gate `AI` | Rework changes `AI_REWORK -> WORKING`; ready entry remains untouched | PASS | `test_h04_ai_rework_precedes_ready_ai`, `test_published_priority_order_is_exact_for_actionable_entries` |
 | H-05 | Legitimate `WORKING` PR at its own HEAD and advanced baseline | Existing PR/HEAD is continued without reconstruction or transition | PASS | `test_h05_working_preserves_existing_pr_and_head` |
 | H-06 | `AI_REVIEW` without decision | `NO_OP`; no implicit approval or closure | PASS | `test_h06_ai_review_without_decision_is_no_op` |
-| H-07 | `AI_REVIEW`, current-HEAD approval, and another ready item | One `AI_REVIEW -> DONE`; no merge; ready item untouched | PASS | `test_h07_current_approval_closes_without_merge_or_second_work` |
-| H-08 | Approval for HEAD A; current HEAD B | `NO_OP`; stale approval cannot close B | PASS | `test_h08_stale_approval_does_not_close_new_head` |
+| H-07 | Gate-`AI` `AI_REVIEW`, current-HEAD approval, no closure commit yet, and another ready item | Semantically complete and merge authorized, but merge is not executable and durable state remains `AI_REVIEW` until closure; no semantic transition or second selection | PASS | `test_h07_current_approval_authorizes_but_awaits_durable_closure` |
+| H-08 | Approval/closure/merge safety variants | Stale or later-invalidated approval, Gate `HUMAN`, non-allowlisted path or queue content, failed checks/mergeability, and reserved matters cannot merge; exact allowlisted closure from approved HEAD that changes only that checkpoint's state and approval metadata preserves authorization; changing another checkpoint, priority, gate, objective, dependencies, or unverified result metadata does not; auto-merge stays disabled | PASS | `test_h08_stale_approval_does_not_close_new_head` and `test_h08_*` safety tests |
 | H-09 | `HUMAN_REQUIRED`, no independent work | `NO_OP`; no human boundary crossing | PASS | `test_h09_human_required_without_independent_work_is_no_op` |
 | H-10 | `BLOCKED`, objective cause persists | `NO_OP`; no compensating work | PASS | `test_h10_persistent_blocked_is_no_op` |
 | H-11 | Objective resolution durably records `READY` or `WORKING` | Only recorded `READY -> WORKING`, or continuation of recorded `WORKING` | PASS | `test_h11_resolved_block_only_uses_recorded_ready_or_working` |
@@ -50,13 +50,25 @@ a passing full suite reproduces every row.
 | H-14 | Runtime lock already held | Adapter sentinel absent; `lock_contended`, exit 0; durable sentinel unchanged | PASS | `test_occupied_lock_skips_adapter_and_exits_cleanly` |
 | H-15 | Missing checkout, adapter, Python, or Codex executable | Runtime/execution failure, never `NO_OP`/checkpoint `BLOCKED`; durable sentinel unchanged | PASS | `test_preflight_failure_is_runtime_failure`, `test_missing_adapter_and_python_are_preflight_failures`, `test_launch_failure_is_execution_failure` |
 | H-16 | Adapter invalid, interrupted, or unknown exit | `interrupted_invalid`; no trustworthy governance result or durable mutation | PASS | `test_invalid_success_output_is_invalid_execution`, `test_signalled_cli_is_interrupted_execution`, `test_adapter_invalid_and_interrupted_are_propagated`, `test_unknown_adapter_status_maps_to_invalid` |
-| H-17 | Approved closure plus another ready action | Only higher-priority closure occurs | PASS | `test_h17_closure_is_only_principal_transition` |
+| H-17 | Approved finalization plus another ready action | Finalization is not a semantic transition, cannot decide authority, and selects no second checkpoint | PASS | `test_h17_finalization_is_not_a_transition_or_second_selection`, `test_h17_finalizer_does_not_decide_gate_or_reserved_authority` |
 | H-18 | Two actionable PR/checkpoints | Only first PR/checkpoint advances | PASS | `test_h18_only_one_pr_even_when_two_reworks_are_possible` |
 
 The cross-cutting priority test asserts the published order without adding it to
-`runtime/systemd_runner.py`: `AI_REWORK`, approved mechanical closure,
+`runtime/systemd_runner.py`: `AI_REWORK`, approved mechanical finalization,
 `WORKING`, `READY` / Gate `AI`, then non-action for `READY` / Gate `HUMAN`,
 undecided `AI_REVIEW`, `HUMAN_REQUIRED`, and persistent `BLOCKED`.
+
+## GOV-006 rework validation evidence
+
+The current GOV-006 rework suite contains 40 tests. The evidence for its
+resubmitted HEAD is a successful complete run of
+`python -m unittest discover -s tests -v`, plus successful `git diff --check`
+and `python -m py_compile validation/heartbeat_harness.py
+tests/test_heartbeat_behavior.py adapter/codex_execution_adapter.py
+runtime/systemd_runner.py`. The required residual-contradiction search was also
+run and its remaining matches were inspected as current delegated-authority,
+human-boundary, or explicitly superseded historical text rather than conflicting
+policy. This record supersedes the PR body's stale 39-test evidence.
 
 
 ## Operational limitation demonstrated

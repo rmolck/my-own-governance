@@ -12,9 +12,9 @@ Each invocation is limited to:
 
 - at most one checkpoint;
 - at most one active PR; and
-- at most one principal state transition.
+- at most one principal semantic transition or one approved operational finalization.
 
-Incidental mechanical steps needed to complete that transition—such as updating its existing PR evidence—do not authorize another checkpoint or an unrelated transition.
+Incidental mechanical steps needed to complete that unit—including allowlisted approval closure—do not authorize another checkpoint or an unrelated transition.
 
 ## Required resolved inputs
 
@@ -91,7 +91,7 @@ Every invocation must be distinguishable as exactly one of these outcomes:
 3. **Checkpoint `BLOCKED`:** the worker validly determined and durably recorded that an objective dependency prevents checkpoint progress. `BLOCKED` is a persistent state defined by `AUTONOMY.md`, not a generic runtime result.
 4. **Runtime/execution failure:** the launcher, scheduler, adapter, agent CLI, temporary quota, locking mechanism, or another execution mechanism prevented valid completion. This is neither `NO_OP` nor checkpoint state and must not automatically mutate a checkpoint to `BLOCKED`.
 
-After a durable `AI_SUPERVISOR: APPROVED` decision for the relevant HEAD, a later invocation may perform the mechanical closure permitted by `AUTONOMY.md` and record `AI_REVIEW -> DONE`. This closure is one principal transition. It does not approve work and never authorizes merge.
+For Gate `AI`, durable `AI_SUPERVISOR: APPROVED` on the relevant HEAD is semantic completion and conditional merge authorization. If that HEAD still publishes `AI_REVIEW`, merge is not executable until a finalizer derives and validates the required strictly allowlisted commit that materializes `DONE`; it then merges the derived HEAD as the same operational finalization. Closure is not a second semantic transition or heartbeat and cannot select more work. The finalizer must verify every safeguard in `AUTONOMY.md`. A failed closure, mergeability, or checks precondition pauses execution without automatically recording `BLOCKED`, and approval never implicitly enables auto-merge.
 
 ## Portable exit semantics
 
@@ -123,7 +123,7 @@ An execution adapter, runner, scheduler, or runtime must not:
 - decide product or architecture;
 - change priorities or invent checkpoints;
 - cross Gate `HUMAN`;
-- approve work, merge, enable auto-merge, or write directly to `main`;
+- approve work, enable auto-merge, or write directly to `main`; a designated mechanical finalizer may execute only a safeguarded, already-authorized Gate-`AI` merge;
 - duplicate the state machine or maintain a semantic queue of its own;
 - reinterpret `AI_REWORK` or other durable supervisor decisions;
 - perform unauthorized destructive or irreversible operations; or
