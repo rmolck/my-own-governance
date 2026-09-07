@@ -58,6 +58,18 @@ The cross-cutting priority test asserts the published order without adding it to
 `WORKING`, `READY` / Gate `AI`, then non-action for `READY` / Gate `HUMAN`,
 undecided `AI_REVIEW`, `HUMAN_REQUIRED`, and persistent `BLOCKED`.
 
+## GOV-006 rework validation evidence
+
+The current GOV-006 rework suite contains 40 tests. The evidence for its
+resubmitted HEAD is a successful complete run of
+`python -m unittest discover -s tests -v`, plus successful `git diff --check`
+and `python -m py_compile validation/heartbeat_harness.py
+tests/test_heartbeat_behavior.py adapter/codex_execution_adapter.py
+runtime/systemd_runner.py`. The required residual-contradiction search was also
+run and its remaining matches were inspected as current delegated-authority,
+human-boundary, or explicitly superseded historical text rather than conflicting
+policy. This record supersedes the PR body's stale 39-test evidence.
+
 
 ## Operational limitation demonstrated
 
