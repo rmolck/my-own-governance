@@ -63,3 +63,19 @@
 **Rationale:** A reusable contract validated against a prior real consumer implementation must preserve one source for intelligence and authority while allowing different execution mechanisms.
 
 **Consequences:** Runners remain deliberately mechanical and do not duplicate states, priorities, roadmap, product, architecture, or semantic work selection. Codex CLI and systemd may become reference implementations but are not protocol requirements.
+
+## D-009 — Linux reference runtime uses advisory locking and the journal
+
+**Decision:** The reference systemd runtime uses a per-checkout, nonblocking
+Linux `flock` for mutual exclusion and emits one bounded technical summary to
+the systemd journal. These are implementation choices, not portable protocol
+requirements.
+
+**Rationale:** Standard Linux facilities provide proportional exclusion and
+observability without a new dependency, state machine, semantic queue, or
+duplicated agent output.
+
+**Consequences:** Lock contention skips the adapter and exits successfully as a
+distinct runtime classification; it never makes a checkpoint `BLOCKED`. Other
+runtimes may use equivalent locking and logging mechanisms while preserving the
+portable behavior in [`EXECUTION.md`](EXECUTION.md).

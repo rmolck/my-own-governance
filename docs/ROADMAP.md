@@ -4,11 +4,11 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Implement a Codex CLI execution adapter as a reference implementation.
+- Implement a reference Linux runtime using systemd. (Completed as GOV-004;
+  pending independent review.)
 
 ## Next
 
-- Implement a reference Linux runtime using systemd.
 - Validate heartbeat behavior.
 - Configure and validate an AI SUPERVISOR.
 - Execute acceptance tests.

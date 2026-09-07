@@ -1,0 +1,17 @@
+[Unit]
+Description=My Own Governance reference heartbeat
+Documentation=file:/opt/my-own-governance/runtime/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=governance
+Group=governance
+WorkingDirectory=/opt/my-own-governance
+EnvironmentFile=/etc/my-own-governance/runtime.env
+ExecStart=/usr/bin/python3 /opt/my-own-governance/runtime/systemd_runner.py
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true

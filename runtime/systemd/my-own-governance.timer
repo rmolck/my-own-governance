@@ -1,0 +1,13 @@
+[Unit]
+Description=Periodic My Own Governance reference heartbeat
+Documentation=file:/opt/my-own-governance/runtime/README.md
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=30min
+AccuracySec=2min
+Persistent=false
+Unit=my-own-governance.service
+
+[Install]
+WantedBy=timers.target
