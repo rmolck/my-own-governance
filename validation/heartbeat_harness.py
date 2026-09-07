@@ -24,12 +24,66 @@ class FreshnessError(RuntimeError):
     """Fresh durable state could not be established; evaluation is invalid."""
 
 
-def _approved_for_head(checkpoint: dict[str, Any]) -> bool:
-    decision = checkpoint.get("decision") or {}
-    return (
-        decision.get("value") == "AI_SUPERVISOR: APPROVED"
-        and decision.get("head") == checkpoint.get("head")
+MECHANICAL_CLOSURE_ALLOWLIST = frozenset({"docs/WORK_QUEUE.md"})
+INVALIDATING_DECISIONS = {
+    "AI_SUPERVISOR: AI_REWORK",
+    "AI_SUPERVISOR: HUMAN_REQUIRED",
+}
+
+
+def _decisions(checkpoint: dict[str, Any]) -> list[dict[str, Any]]:
+    if "decisions" in checkpoint:
+        return checkpoint["decisions"]
+    decision = checkpoint.get("decision")
+    return [decision] if decision else []
+
+
+def _valid_approval(checkpoint: dict[str, Any]) -> dict[str, Any] | None:
+    decisions = _decisions(checkpoint)
+    approval_index = next(
+        (index for index in range(len(decisions) - 1, -1, -1)
+         if decisions[index].get("value") == "AI_SUPERVISOR: APPROVED"),
+        None,
     )
+    if approval_index is None:
+        return None
+    decision = decisions[approval_index]
+    if any(item.get("value") in INVALIDATING_DECISIONS
+           for item in decisions[approval_index + 1:]):
+        return None
+    return (
+        decision
+        if decision.get("pr") in (None, checkpoint.get("pr"))
+        and decision.get("head") == checkpoint.get("approved_base", checkpoint.get("head"))
+        else None
+    )
+
+
+def _finalization(checkpoint: dict[str, Any]) -> dict[str, Any]:
+    """Model only the observable, mechanical checks—not governance decisions."""
+    approval = _valid_approval(checkpoint)
+    semantic_done = checkpoint.get("gate") == "AI" and approval is not None
+    closure_files = set(checkpoint.get("closure_files", []))
+    closure_valid = (
+        not closure_files
+        or (
+            checkpoint.get("closure_parent") == approval.get("head")
+            and closure_files <= MECHANICAL_CLOSURE_ALLOWLIST
+        )
+    ) if approval else False
+    authorized = semantic_done and closure_valid and checkpoint.get("legitimate_pr", True)
+    executable = (
+        authorized
+        and checkpoint.get("mergeable", True)
+        and checkpoint.get("checks_satisfied", True)
+        and not checkpoint.get("human_reserved", False)
+    )
+    return {
+        "semantic_done": semantic_done,
+        "merge_authorized": authorized,
+        "merge_executable": executable,
+        "auto_merge": False,
+    }
 
 
 def evaluate(state: dict[str, Any]) -> dict[str, Any]:
@@ -40,10 +94,13 @@ def evaluate(state: dict[str, Any]) -> dict[str, Any]:
 
     if selected is None:
         selected = next(
-            (c for c in checkpoints if c["state"] == "AI_REVIEW" and _approved_for_head(c)),
+            (c for c in checkpoints
+             if c["state"] == "AI_REVIEW" and _finalization(c)["semantic_done"]),
             None,
         )
-        transition = ("AI_REVIEW", "DONE") if selected else None
+        # APPROVED is the semantic completion. Recording DONE is allowlisted
+        # housekeeping in the same operational finalization, not a transition.
+        transition = None
     if selected is None:
         selected = next((c for c in checkpoints if c["state"] == "WORKING"), None)
         transition = None
@@ -56,17 +113,25 @@ def evaluate(state: dict[str, Any]) -> dict[str, Any]:
 
     if selected is None:
         return {"outcome": NO_OP, "checkpoint": None, "transition": None,
-                "pr": None, "merge": False}
+                "pr": None, "merge": False, "merge_authorized": False,
+                "semantic_done": False, "auto_merge": False}
 
     if transition:
         selected["state"] = transition[1]
+    finalization = _finalization(selected) if selected["state"] == "AI_REVIEW" else {}
+    if finalization.get("merge_executable"):
+        selected["state"] = "DONE"
     return {
-        "outcome": TRANSITION_COMPLETED if transition else "continued",
+        "outcome": (TRANSITION_COMPLETED
+                    if transition or finalization.get("merge_executable") else "continued"),
         "checkpoint": selected["id"],
         "transition": list(transition) if transition else None,
         "pr": selected.get("pr"),
         "head": selected.get("head"),
-        "merge": False,
+        "merge": finalization.get("merge_executable", False),
+        "merge_authorized": finalization.get("merge_authorized", False),
+        "semantic_done": finalization.get("semantic_done", False),
+        "auto_merge": False,
     }
 
 

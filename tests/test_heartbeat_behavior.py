@@ -59,19 +59,73 @@ class HeartbeatSemanticsTest(unittest.TestCase):
     def test_h06_ai_review_without_decision_is_no_op(self):
         self.assert_no_op([checkpoint("review", "AI_REVIEW", head="b")])
 
-    def test_h07_current_approval_closes_without_merge_or_second_work(self):
+    def test_h07_current_approval_semantically_completes_and_authorizes_merge(self):
         items = [checkpoint("review", "AI_REVIEW", head="b",
-                            decision={"value": "AI_SUPERVISOR: APPROVED", "head": "b"}),
+                            pr=7, decision={"value": "AI_SUPERVISOR: APPROVED",
+                                            "head": "b", "pr": 7}),
                  checkpoint("ready", "READY")]
         result = evaluate({"checkpoints": items})
-        self.assertEqual(result["transition"], ["AI_REVIEW", "DONE"])
-        self.assertFalse(result["merge"])
+        self.assertIsNone(result["transition"])
+        self.assertTrue(result["semantic_done"])
+        self.assertTrue(result["merge_authorized"])
+        self.assertTrue(result["merge"])
+        self.assertEqual(items[0]["state"], "DONE")
         self.assertEqual(items[1]["state"], "READY")
 
     def test_h08_stale_approval_does_not_close_new_head(self):
         self.assert_no_op([checkpoint("review", "AI_REVIEW", head="head-b",
                                       decision={"value": "AI_SUPERVISOR: APPROVED",
                                                 "head": "head-a"})])
+
+    def test_h08_mechanical_closure_from_approved_head_preserves_authorization(self):
+        item = checkpoint(
+            "review", "AI_REVIEW", head="closure-head", approved_base="head-a", pr=8,
+            closure_parent="head-a", closure_files=["docs/WORK_QUEUE.md"],
+            decision={"value": "AI_SUPERVISOR: APPROVED", "head": "head-a", "pr": 8},
+        )
+        result = evaluate({"checkpoints": [item]})
+        self.assertTrue(result["merge_authorized"])
+        self.assertTrue(result["merge"])
+
+    def test_h08_non_allowlisted_closure_invalidates_authorization(self):
+        for path in ("src/code.py", "tests/test_code.py", "docs/AUTONOMY.md",
+                     "docs/DECISIONS.md"):
+            with self.subTest(path=path):
+                item = checkpoint(
+                    "review", "AI_REVIEW", head="head-b", approved_base="head-a", pr=8,
+                    closure_parent="head-a", closure_files=["docs/WORK_QUEUE.md", path],
+                    decision={"value": "AI_SUPERVISOR: APPROVED", "head": "head-a", "pr": 8},
+                )
+                result = evaluate({"checkpoints": [item]})
+                self.assertTrue(result["semantic_done"])
+                self.assertFalse(result["merge_authorized"])
+                self.assertFalse(result["merge"])
+
+    def test_h08_gate_human_never_receives_delegated_merge(self):
+        item = checkpoint("review", "AI_REVIEW", "HUMAN", head="a",
+                          decision={"value": "AI_SUPERVISOR: APPROVED", "head": "a"})
+        self.assert_no_op([item])
+
+    def test_h08_later_rework_or_human_required_invalidates_approval(self):
+        for later in ("AI_SUPERVISOR: AI_REWORK", "AI_SUPERVISOR: HUMAN_REQUIRED"):
+            with self.subTest(later=later):
+                item = checkpoint("review", "AI_REVIEW", head="a", decisions=[
+                    {"value": "AI_SUPERVISOR: APPROVED", "head": "a"},
+                    {"value": later, "head": "a"},
+                ])
+                self.assert_no_op([item])
+
+    def test_h08_merge_preconditions_pause_mechanics_without_blocking(self):
+        for field in ("mergeable", "checks_satisfied", "legitimate_pr"):
+            with self.subTest(field=field):
+                item = checkpoint("review", "AI_REVIEW", head="a",
+                                  decision={"value": "AI_SUPERVISOR: APPROVED", "head": "a"},
+                                  **{field: False})
+                result = evaluate({"checkpoints": [item]})
+                self.assertEqual(item["state"], "AI_REVIEW")
+                self.assertNotEqual(item["state"], "BLOCKED")
+                self.assertFalse(result["merge"])
+                self.assertFalse(result["auto_merge"])
 
     def test_h09_human_required_without_independent_work_is_no_op(self):
         self.assert_no_op([checkpoint("human", "HUMAN_REQUIRED", "HUMAN")])
@@ -221,13 +275,24 @@ class HeartbeatSemanticsTest(unittest.TestCase):
                 fixture = json.loads(json.dumps({"checkpoints": layers[offset:]}))
                 self.assertEqual(evaluate(fixture)["outcome"], NO_OP)
 
-    def test_h17_closure_is_only_principal_transition(self):
+    def test_h17_finalization_is_not_a_transition_or_second_selection(self):
         items = [checkpoint("approved", "AI_REVIEW", head="x",
                             decision={"value": "AI_SUPERVISOR: APPROVED", "head": "x"}),
                  checkpoint("next", "READY")]
         result = evaluate({"checkpoints": items})
         self.assertEqual(result["checkpoint"], "approved")
+        self.assertIsNone(result["transition"])
+        self.assertTrue(result["semantic_done"])
         self.assertEqual(items[1]["state"], "READY")
+
+    def test_h17_finalizer_does_not_decide_gate_or_reserved_authority(self):
+        for extra in ({"gate": "HUMAN"}, {"human_reserved": True}):
+            item = checkpoint("review", "AI_REVIEW", head="x",
+                              decision={"value": "AI_SUPERVISOR: APPROVED", "head": "x"},
+                              **extra)
+            result = evaluate({"checkpoints": [item]})
+            self.assertFalse(result["merge"])
+            self.assertFalse(result["auto_merge"])
 
     def test_h18_only_one_pr_even_when_two_reworks_are_possible(self):
         items = [checkpoint("first", "AI_REWORK", pr=1), checkpoint("second", "AI_REWORK", pr=2)]
