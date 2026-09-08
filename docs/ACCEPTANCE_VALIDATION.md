@@ -81,6 +81,13 @@ been updated. The PR #12 description is now explicitly replaced with the real
 branch, PR, and current resubmitted HEAD; its obsolete publication-failed,
 pending-PR, old-branch, and old-HEAD statements are not current evidence.
 
+The AI SUPERVISOR then reviewed HEAD
+`32dc32ccb83f852d37e9ad3001a50408e32d555b`, confirmed again that implementation
+remained acceptable, and found that the actual GitHub PR object had still not
+received the replacement description. The current resubmission updates that PR
+object itself; this record does not treat preparing replacement metadata as
+equivalent to publishing it.
+
 Neither rework changes implementation semantics. The complete 66-test suite
 and focused 10-test acceptance suite pass again, as do Python compilation,
 patch hygiene, the directed contradiction inspection, and the
