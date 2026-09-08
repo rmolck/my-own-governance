@@ -67,3 +67,16 @@ repositories validate freshness mechanics without network access. Adapter and
 runtime subprocesses are real reference entry points around fake or missing
 executables, so they prove classification/propagation rather than a live Codex
 invocation.
+
+## AI_REWORK validation evidence
+
+PR #12 was published on branch
+`codex/crear-gov-008-para-pruebas-de-aceptacion`. The AI SUPERVISOR reviewed
+HEAD `6e16737dae9804f915bba2820e9f25e5af87079f` and requested only correction of
+the stale branch, PR, HEAD, and publication statements; it found the acceptance
+composition structurally sound. The correction changes no implementation
+semantics. The complete 66-test suite and focused 10-test acceptance suite pass
+again, as do Python compilation, patch hygiene, the directed contradiction
+inspection, and the credential-pattern scan. The updated PR description binds
+these rework results to the current resubmitted HEAD and supersedes its stale
+pre-publication statements.
