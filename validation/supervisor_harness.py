@@ -120,15 +120,21 @@ def mechanical_closure_preserves_review(
     decision: ReviewDecision, closure: dict[str, Any]
 ) -> bool:
     """Recognize GOV-006's narrow derived closure without re-reviewing it."""
+    state_change = {
+        "checkpoint": decision.checkpoint,
+        "field": "state",
+        "before": "AI_REVIEW",
+        "after": "DONE",
+    }
+    result_change = {
+        "checkpoint": decision.checkpoint,
+        "field": "last_relevant_result",
+        "after": {"decision": APPROVED, "head": decision.head},
+    }
     return (
         decision.merge_authorized
         and closure.get("parent") == decision.head
         and closure.get("checkpoint") == decision.checkpoint
         and closure.get("files") == ["docs/WORK_QUEUE.md"]
-        and closure.get("changes") == [{
-            "checkpoint": closure.get("checkpoint"),
-            "field": "state",
-            "before": "AI_REVIEW",
-            "after": "DONE",
-        }]
+        and closure.get("changes") in ([state_change], [state_change, result_change])
     )

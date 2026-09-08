@@ -43,10 +43,11 @@ retargets a decision to a later HEAD.
 | S-14 | Diff unobserved / pass unsupported | each evidentiary defect is explicit `AI_REWORK` |
 
 The closure helper is intentionally narrow and non-production: exact approved
-parent, only `docs/WORK_QUEUE.md`, and only the reviewed checkpoint's
-`AI_REVIEW -> DONE` state change. The complete GOV-006 finalizer safeguards
-remain normative in [`AUTONOMY.md`](AUTONOMY.md) and covered by the heartbeat
-harness; this oracle validates only the supervisor/finalizer boundary.
+parent, only `docs/WORK_QUEUE.md`, the reviewed checkpoint's
+`AI_REVIEW -> DONE` state change, and optionally its exact approved decision
+and HEAD metadata. The complete GOV-006 finalizer safeguards remain normative
+in [`AUTONOMY.md`](AUTONOMY.md) and covered by the heartbeat harness; this
+oracle validates only the supervisor/finalizer boundary.
 
 ## Limits
 
