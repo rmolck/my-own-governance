@@ -4,7 +4,7 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Execute GOV-008 end-to-end acceptance validation of the autonomous governance protocol.
+- Implement GOV-009 actor ownership, versioned role instructions, deterministic finalizer sequencing, and runtime timing evidence.
 
 ## Next
 

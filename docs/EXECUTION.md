@@ -149,3 +149,11 @@ An execution adapter, runner, scheduler, or runtime must not:
 ## Portability
 
 The contract can be implemented by combinations such as Codex CLI with systemd, another agent CLI with cron, GitHub Actions, Codex Automations, or future runtimes. These are informative examples only. No named agent, scheduler, operating system, lock primitive, or hosting provider is a normative dependency.
+
+## Reference phase sequence and timing evidence
+
+A reference wake follows `lock -> fresh refresh -> finalizer pre-pass -> worker if still authorized -> await -> fresh refresh -> finalizer post-pass -> record -> unlock`. Every finalizer pass consumes newly refreshed durable state and acts only on a mechanically eligible, approved Gate-`AI` PR; Codex exiting is not an eligibility signal. A successful pre-pass consumes the one-checkpoint/PR allowance and skips the worker. The finalizer is deterministic and allowlisted, while the runner provides no semantic selector.
+
+The runtime measures externally with a monotonic clock around `codex exec` and, where feasible, the complete locked iteration. Append-only structured evidence records UTC start/finish identity, `codex_wall_seconds`, runner wall seconds, exit/classification/outcome, lock contention, checkpoint/branch/PR and relevant before/after HEAD when resolved. Unknown fields remain null rather than invented. Raw per-run evidence is private local runtime data by default; public repository evidence is sanitized and aggregated periodically or in bounded batches, never committed once per wake.
+
+Cadence is runtime configuration. The initial alternating runner/worker opportunity at `:00` and supervisor opportunity at `:30` is only a reference. Changes must use enough observed samples and consider median, p90, p95, maximum, failures, outcomes, and lock contention with operational margin—not mean alone.

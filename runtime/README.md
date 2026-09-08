@@ -96,3 +96,7 @@ The adapter remains responsible for at most one Codex process and private raw
 artifacts. systemd and `flock` are Linux-specific mechanics; authority, states,
 gates, durable-state freshness, heartbeat priority, and result meanings remain
 portable contracts in `docs/AUTONOMY.md` and `docs/EXECUTION.md`.
+
+## GOV-009 phase hooks and local evidence
+
+`GOVERNANCE_REFRESH_COMMAND` and `GOVERNANCE_FINALIZER_COMMAND` configure mechanical commands used for the fresh-state/finalizer pre- and post-passes. A pre-pass JSON outcome of `finalized` consumes the invocation and skips Codex. These commands must implement the versioned [`FINALIZER`](../agents/FINALIZER.md) and remote-freshness contracts; the runner does not infer eligibility. `GOVERNANCE_EVIDENCE_FILE` defaults to `.git/governance-runtime/runs.jsonl`, a mode-0600 append-only local JSONL stream. It records phase classifications, lock contention, Codex wall time, and total runner wall time without creating repository commits.

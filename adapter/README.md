@@ -64,3 +64,5 @@ cross-invocation locking, retry policy, systemd integration, merge, and
 auto-merge are outside this adapter. The separate
 [`runtime/`](../runtime/README.md) reference composes this adapter with Linux
 locking and systemd without moving those responsibilities into this layer.
+
+The bootstrap prompt intentionally points to the versioned [`CODEX_WORKER`](../agents/CODEX_WORKER.md) contract instead of embedding a large ad-hoc policy. Schema version 1 timing includes `finished_at`, external monotonic `codex_wall_seconds`, and `adapter_wall_seconds`; unavailable timing is `null`, not estimated.

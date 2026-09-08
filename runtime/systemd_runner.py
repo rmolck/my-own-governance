@@ -11,6 +11,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 
 
 VALID = 0
@@ -23,7 +24,7 @@ def timestamp() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def emit(repository: Path, **values: object) -> None:
+def emit(repository: Path, **values: object) -> dict[str, object]:
     summary = {
         "timestamp": timestamp(),
         "repository": str(repository),
@@ -36,6 +37,23 @@ def emit(repository: Path, **values: object) -> None:
     }
     summary.update(values)
     print(json.dumps(summary, sort_keys=True), flush=True)
+    return summary
+
+
+def run_command(command: str, repository: Path) -> subprocess.CompletedProcess[str]:
+    """Run one configured mechanical phase without shell interpretation."""
+    import shlex
+    return subprocess.run(shlex.split(command), cwd=repository, capture_output=True,
+                          text=True, check=False)
+
+
+def append_evidence(path: Path | None, summary: dict[str, object]) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    descriptor = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    with os.fdopen(descriptor, "a", encoding="utf-8") as stream:
+        stream.write(json.dumps(summary, sort_keys=True) + "\n")
 
 
 def env_path(name: str, default: str | None = None) -> Path:
@@ -54,6 +72,8 @@ def executable(value: str) -> str | None:
 
 
 def run() -> int:
+    runner_started_at = timestamp()
+    runner_started = time.monotonic()
     try:
         repository = env_path("GOVERNANCE_REPOSITORY")
     except (OSError, ValueError) as error:
@@ -71,6 +91,12 @@ def run() -> int:
             "GOVERNANCE_LOCK_FILE",
             str(repository / ".git" / "codex-systemd-runtime.lock"),
         )
+        evidence_file = Path(os.environ.get(
+            "GOVERNANCE_EVIDENCE_FILE",
+            str(repository / ".git" / "governance-runtime" / "runs.jsonl"),
+        )).expanduser().resolve()
+        refresh_command = os.environ.get("GOVERNANCE_REFRESH_COMMAND")
+        finalizer_command = os.environ.get("GOVERNANCE_FINALIZER_COMMAND")
         python = executable(os.environ.get("GOVERNANCE_PYTHON", sys.executable))
         if not repository.is_dir() or not (repository / ".git").exists():
             raise ValueError("repository is not a usable Git checkout/worktree")
@@ -85,8 +111,40 @@ def run() -> int:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 lock_acquired = True
             except BlockingIOError:
-                emit(repository, classification="lock_contended")
+                summary = emit(repository, classification="lock_contended",
+                               runner_started_at=runner_started_at,
+                               runner_wall_seconds=round(time.monotonic() - runner_started, 6))
+                append_evidence(evidence_file, summary)
                 return VALID
+
+            phases: list[dict[str, object]] = []
+            for phase in ("refresh_pre", "finalizer_pre"):
+                configured = refresh_command if phase == "refresh_pre" else finalizer_command
+                if not configured:
+                    phases.append({"phase": phase, "classification": "not_configured"})
+                    continue
+                completed_phase = run_command(configured, repository)
+                item = {"phase": phase, "exit_status": completed_phase.returncode,
+                        "classification": "completed" if completed_phase.returncode == 0 else "failed"}
+                if phase == "finalizer_pre" and completed_phase.returncode == 0:
+                    try:
+                        item["outcome"] = json.loads(completed_phase.stdout).get("outcome")
+                    except (json.JSONDecodeError, AttributeError):
+                        item["classification"] = "failed"
+                phases.append(item)
+                if item.get("classification") == "failed":
+                    summary = emit(repository, lock_acquired=True, classification="preflight_failure",
+                                   phases=phases, runner_started_at=runner_started_at,
+                                   runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                                   technical_error=f"{phase} failed")
+                    append_evidence(evidence_file, summary)
+                    return EXECUTION_FAILURE
+                if item.get("outcome") == "finalized":
+                    summary = emit(repository, lock_acquired=True, classification="finalized_pre_pass",
+                                   phases=phases, runner_started_at=runner_started_at,
+                                   runner_wall_seconds=round(time.monotonic() - runner_started, 6))
+                    append_evidence(evidence_file, summary)
+                    return VALID
 
             command = [python, str(adapter), str(repository)]
             codex = os.environ.get("GOVERNANCE_CODEX_EXECUTABLE")
@@ -107,8 +165,19 @@ def run() -> int:
                     "stderr_path": adapter_summary.get("stderr_path"),
                 }
                 technical_error = adapter_summary.get("technical_error")
+                codex_wall_seconds = adapter_summary.get("codex_wall_seconds")
             except (json.JSONDecodeError, AttributeError):
                 technical_error = "adapter did not emit its expected JSON summary"
+                codex_wall_seconds = None
+
+            for phase in ("refresh_post", "finalizer_post"):
+                configured = refresh_command if phase == "refresh_post" else finalizer_command
+                if not configured:
+                    phases.append({"phase": phase, "classification": "not_configured"})
+                    continue
+                completed_phase = run_command(configured, repository)
+                phases.append({"phase": phase, "exit_status": completed_phase.returncode,
+                               "classification": "completed" if completed_phase.returncode == 0 else "failed"})
 
             classifications = {
                 VALID: "valid_completion",
@@ -120,7 +189,7 @@ def run() -> int:
                 completed.returncode, "interrupted_invalid"
             )
             result = completed.returncode if completed.returncode in classifications else INVALID
-            emit(
+            summary = emit(
                 repository,
                 lock_acquired=True,
                 adapter_launched=True,
@@ -128,7 +197,12 @@ def run() -> int:
                 classification=classification,
                 artifacts=artifacts,
                 technical_error=str(technical_error)[:300] if technical_error else None,
+                phases=phases,
+                codex_wall_seconds=codex_wall_seconds,
+                runner_started_at=runner_started_at,
+                runner_wall_seconds=round(time.monotonic() - runner_started, 6),
             )
+            append_evidence(evidence_file, summary)
             return result
     except KeyboardInterrupt:
         emit(

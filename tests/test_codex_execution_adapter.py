@@ -69,8 +69,17 @@ class AdapterTest(unittest.TestCase):
         self.assertEqual(summary["classification"], "valid_completion")
         self.assertEqual(summary["structured_event_count"], 1)
         prompt = (self.directory / "prompt").read_text()
-        self.assertIn("exactly one", prompt)
+        self.assertIn("agents/CODEX_WORKER.md", prompt)
         self.assertNotIn("GOV-", prompt)
+        self.assertGreaterEqual(summary["codex_wall_seconds"], 0)
+        self.assertGreaterEqual(summary["adapter_wall_seconds"], summary["codex_wall_seconds"])
+        self.assertIn("finished_at", summary)
+
+    def test_bootstrap_does_not_embed_github_metadata_claims(self):
+        self.invoke()
+        prompt = (self.directory / "prompt").read_text()
+        self.assertLess(len(prompt), 300)
+        self.assertNotIn("PR body", prompt)
 
     def test_nonzero_cli_status_is_execution_failure_and_captured(self):
         result = self.invoke("failure")

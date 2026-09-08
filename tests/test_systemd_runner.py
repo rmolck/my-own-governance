@@ -69,6 +69,25 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertTrue(summary["lock_acquired"])
         self.assertTrue(summary["adapter_launched"])
         self.assertEqual(summary["classification"], "valid_completion")
+        self.assertGreaterEqual(summary["runner_wall_seconds"], 0)
+        self.assertEqual([phase["phase"] for phase in summary["phases"]],
+                         ["refresh_pre", "finalizer_pre", "refresh_post", "finalizer_post"])
+        evidence = self.repository / ".git" / "governance-runtime" / "runs.jsonl"
+        self.assertEqual(len(evidence.read_text().splitlines()), 1)
+
+    def test_finalizer_pre_pass_consumes_invocation(self):
+        finalizer = self.directory / "finalizer"
+        finalizer.write_text('#!/bin/sh\nprintf \'{"outcome":"finalized"}\\n\'\n')
+        finalizer.chmod(finalizer.stat().st_mode | stat.S_IXUSR)
+        result = self.invoke(env=self.env | {"GOVERNANCE_FINALIZER_COMMAND": str(finalizer)})
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(self.summary(result)["classification"], "finalized_pre_pass")
+        self.assertFalse((self.directory / "counter").exists())
+
+    def test_finalizer_does_not_act_from_codex_exit_alone(self):
+        result = self.invoke()
+        phases = self.summary(result)["phases"]
+        self.assertEqual(phases[-1]["classification"], "not_configured")
 
     def test_occupied_lock_skips_adapter_and_exits_cleanly(self):
         self.lock.touch()
