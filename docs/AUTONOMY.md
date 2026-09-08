@@ -132,7 +132,8 @@ When the approved HEAD still publishes the checkpoint as `AI_REVIEW`, authorizat
 
 ## Future heartbeat selection
 
-After refreshing durable GitHub state and reconciling an active PR, one invocation processes at most one checkpoint/PR in this order:
+After refreshing durable GitHub state and reconciling an active PR, one worker
+invocation processes at most one checkpoint/PR in this order:
 
 1. `AI_REWORK`.
 2. An approved Gate-`AI` PR eligible for mechanical closure and merge finalization.
@@ -143,9 +144,21 @@ After refreshing durable GitHub state and reconciling an active PR, one invocati
 7. `HUMAN_REQUIRED`: do not cross it; only clearly permitted independent work may proceed.
 8. `BLOCKED`: revalidate its cause; if it persists, `NO_OP`.
 
-Finalization consumes the invocation's single checkpoint/PR allowance and never selects another checkpoint.
+The finalizer never selects another checkpoint. A finalized PR and one later
+worker transition may share a wake only after the runner refreshes durable state;
+they remain separate principal units and the worker still processes at most one
+checkpoint/PR.
 
-The reference runtime sequence is: acquire lock, refresh, finalizer pre-pass, stop if it finalized the single allowed checkpoint/PR, otherwise invoke the worker only when authorized, await completion, refresh again, finalizer post-pass, record the result, and release the lock. Codex completion alone never makes finalization eligible; each pass acts only from fresh durable evidence of an approved Gate-`AI` PR. Alternating `:00` runner/worker and `:30` supervisor opportunities are initial operational configuration, not governance semantics. If a valid evaluation completes and no work is authorized, return exactly `NO_OP`. If evaluation cannot complete, report a runtime/execution failure instead. Never invent work and avoid unnecessary parallel work.
+The reference runtime sequence is: acquire lock, refresh, finalizer pre-pass,
+finalize eligible approved work, refresh and reconcile after any finalization,
+invoke the worker once if the refreshed contract authorizes it, record, and release
+the lock. Codex completion never triggers a finalizer post-pass: a new approval
+cannot exist until the supervisor's later opportunity. Alternating `:00`
+runner/worker and `:30` supervisor opportunities are initial operational
+configuration, not governance semantics. If a valid evaluation completes and no
+work is authorized, return exactly `NO_OP`. If evaluation cannot complete, report
+a runtime/execution failure instead. Never invent work and avoid unnecessary
+parallel work.
 
 ## Git and safety policy
 

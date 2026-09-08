@@ -71,23 +71,35 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertEqual(summary["classification"], "valid_completion")
         self.assertGreaterEqual(summary["runner_wall_seconds"], 0)
         self.assertEqual([phase["phase"] for phase in summary["phases"]],
-                         ["refresh_pre", "finalizer_pre", "refresh_post", "finalizer_post"])
+                         ["refresh_pre", "finalizer_pre"])
         evidence = self.repository / ".git" / "governance-runtime" / "runs.jsonl"
         self.assertEqual(len(evidence.read_text().splitlines()), 1)
 
-    def test_finalizer_pre_pass_consumes_invocation(self):
-        finalizer = self.directory / "finalizer"
-        finalizer.write_text('#!/bin/sh\nprintf \'{"outcome":"finalized"}\\n\'\n')
-        finalizer.chmod(finalizer.stat().st_mode | stat.S_IXUSR)
+    def test_finalizer_pre_pass_refreshes_then_invokes_worker_once(self):
+        order = self.directory / "order"
+        refresh = self.phase_script("refresh", f'echo refresh >> "{order}"\n')
+        finalizer = self.phase_script(
+            "finalizer", f'echo finalizer >> "{order}"\nprintf \'{{"outcome":"finalized"}}\\n\'\n')
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_REFRESH_COMMAND": str(refresh),
+            "GOVERNANCE_FINALIZER_COMMAND": str(finalizer),
+        })
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual((self.directory / "counter").read_text(), "x")
+        self.assertEqual(order.read_text().splitlines(),
+                         ["refresh", "finalizer", "refresh"])
+        self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
+                         ["refresh_pre", "finalizer_pre", "refresh_after_finalization"])
+
+    def test_worker_completion_never_triggers_finalizer_post_pass(self):
+        count = self.directory / "finalizer-count"
+        finalizer = self.phase_script(
+            "finalizer", f'echo x >> "{count}"\nprintf \'{{"outcome":"ineligible"}}\\n\'\n')
         result = self.invoke(env=self.env | {"GOVERNANCE_FINALIZER_COMMAND": str(finalizer)})
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(self.summary(result)["classification"], "finalized_pre_pass")
-        self.assertFalse((self.directory / "counter").exists())
-
-    def test_finalizer_does_not_act_from_codex_exit_alone(self):
-        result = self.invoke()
-        phases = self.summary(result)["phases"]
-        self.assertEqual(phases[-1]["classification"], "not_configured")
+        self.assertEqual(count.read_text().splitlines(), ["x"])
+        self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
+                         ["refresh_pre", "finalizer_pre"])
 
     def phase_script(self, name, body):
         script = self.directory / name
@@ -95,46 +107,19 @@ class SystemdRunnerTest(unittest.TestCase):
         script.chmod(script.stat().st_mode | stat.S_IXUSR)
         return script
 
-    def test_failed_post_refresh_stops_finalizer_and_fails_execution(self):
-        count = self.directory / "finalizer-count"
-        refresh = self.phase_script(
-            "refresh", f'test -f "{self.directory / "refreshed"}" && exit 8\n'
-            f'touch "{self.directory / "refreshed"}"\n')
-        finalizer = self.phase_script(
-            "finalizer", f'echo x >> "{count}"\nprintf \'{{"outcome":"ineligible"}}\\n\'\n')
+    def test_failed_refresh_after_finalization_skips_worker(self):
+        refresh = self.phase_script("refresh", f'test -f "{self.directory / "refreshed"}" && exit 8\n'
+                                    f'touch "{self.directory / "refreshed"}"\n')
+        finalizer = self.phase_script("finalizer", 'printf \'{"outcome":"finalized"}\\n\'\n')
         result = self.invoke(env=self.env | {
             "GOVERNANCE_REFRESH_COMMAND": str(refresh),
             "GOVERNANCE_FINALIZER_COMMAND": str(finalizer),
         })
         self.assertEqual(result.returncode, 70)
         summary = self.summary(result)
-        self.assertEqual(summary["classification"], "runner_internal_failure")
-        self.assertEqual(summary["technical_error"], "refresh_post failed")
-        self.assertEqual(count.read_text().splitlines(), ["x"])
-        self.assertNotIn("finalizer_post", [phase["phase"] for phase in summary["phases"]])
-
-    def test_failed_post_finalizer_fails_execution(self):
-        count = self.directory / "finalizer-count"
-        finalizer = self.phase_script(
-            "finalizer", f'echo x >> "{count}"\n'
-            f'test "$(wc -l < "{count}")" -eq 1 && printf \'{{"outcome":"ineligible"}}\\n\' || exit 9\n')
-        result = self.invoke(env=self.env | {"GOVERNANCE_FINALIZER_COMMAND": str(finalizer)})
-        self.assertEqual(result.returncode, 70)
-        summary = self.summary(result)
-        self.assertEqual(summary["classification"], "runner_internal_failure")
-        self.assertEqual(summary["technical_error"], "finalizer_post failed")
-
-    def test_successful_post_finalization_records_outcome(self):
-        count = self.directory / "finalizer-count"
-        finalizer = self.phase_script(
-            "finalizer", f'echo x >> "{count}"\n'
-            f'test "$(wc -l < "{count}")" -eq 1 && printf \'{{"outcome":"ineligible"}}\\n\' '
-            f'|| printf \'{{"outcome":"finalized"}}\\n\'\n')
-        result = self.invoke(env=self.env | {"GOVERNANCE_FINALIZER_COMMAND": str(finalizer)})
-        self.assertEqual(result.returncode, 0)
-        summary = self.summary(result)
-        self.assertEqual(summary["finalizer_post_outcome"], "finalized")
-        self.assertEqual(summary["phases"][-1]["outcome"], "finalized")
+        self.assertEqual(summary["classification"], "preflight_failure")
+        self.assertEqual(summary["technical_error"], "refresh_after_finalization failed")
+        self.assertFalse((self.directory / "counter").exists())
 
     def test_occupied_lock_skips_adapter_and_exits_cleanly(self):
         self.lock.touch()

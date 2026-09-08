@@ -139,4 +139,13 @@ and `AUTONOMY.md` already accepted; all other closure metadata remains invalid.
 
 **Rationale:** Assigning each operation to the least-semantic capable actor avoids using commits to simulate unavailable GitHub metadata, permits deterministic finalization, reduces prompt drift, and makes cadence changes evidence-driven.
 
-**Consequences:** The reference order is fresh refresh, finalizer pre-pass, worker when still authorized, fresh refresh, and finalizer post-pass. Finalization consumes the one-checkpoint/PR allowance. The initial `:00` worker and `:30` supervisor opportunities are operational configuration only. Exhaustive per-run telemetry is local and append-only by default; repository evidence is periodically aggregated, never committed once per execution.
+**Consequences:** The reference order is fresh refresh, finalizer pre-pass, a
+second fresh refresh/reconciliation after successful finalization, and one worker
+invocation when the refreshed contract authorizes it. There is no finalizer
+post-pass after the worker. A finalized PR and a later worker transition are
+separate principal units that may share one wake; the finalizer itself never
+selects or invokes work. This owner clarification supersedes D-013's original
+wording that finalization consumed the whole wake. The initial `:00` worker and
+`:30` supervisor opportunities are operational configuration only. Exhaustive
+per-run telemetry is local and append-only by default; repository evidence is
+periodically aggregated, never committed once per execution.

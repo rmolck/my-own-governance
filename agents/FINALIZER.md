@@ -10,6 +10,6 @@ invalidating decision/change, non-human-reserved scope, required checks,
 mergeability, strictly allowlisted closure from the exact approved HEAD when
 needed, and expected-HEAD-protected merge. Otherwise emit a bounded ineligible or
 failed outcome without changing checkpoint state. Never enable auto-merge, merge
-Gate `HUMAN`, or select subsequent work. A successful finalization consumes the
-invocation allowance.
-
+Gate `HUMAN`, select subsequent work, or invoke the worker. After successful
+finalization, the runner refreshes and may offer one worker invocation; that is a
+separate principal unit selected from freshly reconciled durable state.

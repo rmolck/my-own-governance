@@ -140,11 +140,32 @@ def run() -> int:
                     append_evidence(evidence_file, summary)
                     return EXECUTION_FAILURE
                 if item.get("outcome") == "finalized":
-                    summary = emit(repository, lock_acquired=True, classification="finalized_pre_pass",
-                                   phases=phases, runner_started_at=runner_started_at,
-                                   runner_wall_seconds=round(time.monotonic() - runner_started, 6))
-                    append_evidence(evidence_file, summary)
-                    return VALID
+                    if not refresh_command:
+                        summary = emit(
+                            repository, lock_acquired=True,
+                            classification="preflight_failure", phases=phases,
+                            runner_started_at=runner_started_at,
+                            runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                            technical_error="fresh refresh after finalization is not configured",
+                        )
+                        append_evidence(evidence_file, summary)
+                        return EXECUTION_FAILURE
+                    refreshed = run_command(refresh_command, repository)
+                    phases.append({
+                        "phase": "refresh_after_finalization",
+                        "exit_status": refreshed.returncode,
+                        "classification": "completed" if refreshed.returncode == 0 else "failed",
+                    })
+                    if refreshed.returncode != 0:
+                        summary = emit(
+                            repository, lock_acquired=True,
+                            classification="preflight_failure", phases=phases,
+                            runner_started_at=runner_started_at,
+                            runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                            technical_error="refresh_after_finalization failed",
+                        )
+                        append_evidence(evidence_file, summary)
+                        return EXECUTION_FAILURE
 
             command = [python, str(adapter), str(repository)]
             codex = os.environ.get("GOVERNANCE_CODEX_EXECUTABLE")
@@ -170,27 +191,6 @@ def run() -> int:
                 technical_error = "adapter did not emit its expected JSON summary"
                 codex_wall_seconds = None
 
-            post_phase_failure = None
-            finalizer_post_outcome = None
-            for phase in ("refresh_post", "finalizer_post"):
-                configured = refresh_command if phase == "refresh_post" else finalizer_command
-                if not configured:
-                    phases.append({"phase": phase, "classification": "not_configured"})
-                    continue
-                completed_phase = run_command(configured, repository)
-                item = {"phase": phase, "exit_status": completed_phase.returncode,
-                        "classification": "completed" if completed_phase.returncode == 0 else "failed"}
-                if phase == "finalizer_post" and completed_phase.returncode == 0:
-                    try:
-                        finalizer_post_outcome = json.loads(completed_phase.stdout).get("outcome")
-                        item["outcome"] = finalizer_post_outcome
-                    except (json.JSONDecodeError, AttributeError):
-                        item["classification"] = "failed"
-                phases.append(item)
-                if item["classification"] == "failed":
-                    post_phase_failure = phase
-                    break
-
             classifications = {
                 VALID: "valid_completion",
                 INVALID: "interrupted_invalid",
@@ -201,10 +201,6 @@ def run() -> int:
                 completed.returncode, "interrupted_invalid"
             )
             result = completed.returncode if completed.returncode in classifications else INVALID
-            if post_phase_failure is not None:
-                classification = "runner_internal_failure"
-                result = EXECUTION_FAILURE
-                technical_error = f"{post_phase_failure} failed"
             summary = emit(
                 repository,
                 lock_acquired=True,
@@ -215,7 +211,6 @@ def run() -> int:
                 technical_error=str(technical_error)[:300] if technical_error else None,
                 phases=phases,
                 codex_wall_seconds=codex_wall_seconds,
-                finalizer_post_outcome=finalizer_post_outcome,
                 runner_started_at=runner_started_at,
                 runner_wall_seconds=round(time.monotonic() - runner_started, 6),
             )
