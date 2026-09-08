@@ -7,6 +7,11 @@ it is not another normative state machine. The structured oracle in
 only inside the test surface. Production selection remains the responsibility
 of the governance-aware worker, while the adapter and runtime remain mechanical.
 
+GOV-007's complementary supervisor contract and deterministic scenario matrix
+are documented in [`SUPERVISOR_VALIDATION.md`](SUPERVISOR_VALIDATION.md). That
+oracle consumes an already-selected PR and deliberately performs no heartbeat
+selection.
+
 ## Strategy and result taxonomy
 
 The suite uses explicit structured fixtures rather than parsing free-form agent

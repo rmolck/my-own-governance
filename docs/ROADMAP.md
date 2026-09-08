@@ -4,7 +4,7 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Configure and validate an AI SUPERVISOR under the delegated-merge contract.
+- Complete AI SUPERVISOR review of GOV-007's delegated-merge contract model.
 
 ## Next
 

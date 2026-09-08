@@ -11,5 +11,6 @@ Operational coordination for this repository only. Requirements and governance r
 | GOV-005 | Validate heartbeat behavior reproducibly against the autonomous and execution contracts. | GOV-004 `DONE`; [`AUTONOMY.md`](AUTONOMY.md); [`EXECUTION.md`](EXECUTION.md). | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on HEAD `72624d4d39c2481f6dee39e70749b7bdd0f55267`; HUMAN OWNER authorized merge of PR #8. |
 
 | GOV-006 | Simplify approval closure and delegate Gate-AI merge authorization to the AI SUPERVISOR. | GOV-001..GOV-005 `DONE`; explicit HUMAN OWNER authorization in the originating task; [`AUTONOMY.md`](AUTONOMY.md); [`EXECUTION.md`](EXECUTION.md). | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on HEAD `1d4e6537d7c539270870a37bfccf5e33adf2ef2b`. |
+| GOV-007 | Configure and reproducibly validate the AI SUPERVISOR contract. | GOV-001..GOV-006 `DONE`; [`AUTONOMY.md`](AUTONOMY.md); [`SUPERVISOR_VALIDATION.md`](SUPERVISOR_VALIDATION.md). | DONE | AI | `codex/crear-checkpoint-gov-007-para-ai-supervisor` / PR #11 | `AI_SUPERVISOR: APPROVED` on HEAD `0ccf358abbf564a432394b165671a6caca53bf1f`. |
 
 Future work enters only with a concise objective, objective dependencies, one normative state, one gate, active work identity when present, and the last relevant durable result. Detailed requirements must be linked, not copied here.
