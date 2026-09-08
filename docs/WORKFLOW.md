@@ -21,3 +21,9 @@ Run relevant available checks, inspect the full diff, and report exact commands 
 Create focused commits, push the branch, and create or update one PR. Record its branch/PR and relevant result in the queue where the protocol requires it. Set `AI_REVIEW` only when the current relevant HEAD and evidence are ready. The AI SUPERVISOR uses only its three normative decision forms.
 
 For `AI_REWORK`, address findings on the same branch/PR and resubmit. For `HUMAN_REQUIRED`, record the material choice and stop at the gate. For `BLOCKED`, record the objective dependency and revalidation evidence. For Gate `AI`, approval is semantic completion and conditional merge authorization. A separate mechanical finalizer may create only the allowlisted queue-closure commit and merge exactly that derived HEAD after verifying every safeguard in `AUTONOMY.md`; this is not another semantic transition and does not enable auto-merge. Gate `HUMAN`, human-reserved matters, and future authority-policy changes still require explicit owner authorization.
+
+The supervisor reviews only the submitted checkpoint/PR. It records concrete
+correctable findings as `AI_REWORK`, uses `HUMAN_REQUIRED` only for an actual
+owner-reserved decision, and publishes no decision when tooling prevents a
+trustworthy review. It verifies HEAD both before reviewing and immediately
+before commenting; a changed HEAD must be reviewed anew.

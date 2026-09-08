@@ -87,3 +87,22 @@ portable behavior in [`EXECUTION.md`](EXECUTION.md).
 **Rationale:** Separating semantic authority from operational capability removes a redundant heartbeat and routine human merge bottleneck without turning the runtime into a second supervisor.
 
 **Consequences:** Later substantive changes or a later `AI_REWORK` or `HUMAN_REQUIRED` invalidate approval. When the approved HEAD still records `AI_REVIEW`, authorization exists but merge is not executable until a closure commit materializes `DONE`. That commit preserves derived authorization without renewed review only when it starts exactly at the approved HEAD and its entire diff is allowlisted to `docs/WORK_QUEUE.md` closure metadata; code, tests, requirements, normative decisions, or any other file invalidate it. The finalizer merges exactly the verified derived HEAD using movement protection when available, after verifying PR identity and legitimacy, mergeability, required/configured checks, gate and human-reserved boundaries, and non-destructive operation. Closure and merge are one operational finalization, not a new decision or heartbeat. A failed operational precondition does not automatically mean `BLOCKED`. Approval never enables generic GitHub auto-merge.
+
+## D-011 — Supervisor review is HEAD-bound and evidence-driven
+
+**Decision:** The AI SUPERVISOR reviews one already-selected, review-ready PR
+from observable repository and GitHub evidence. It re-confirms the exact PR HEAD
+immediately before publishing exactly one normative decision. It does not
+implement fixes, select work, schedule execution, perform finalization, invent
+requirements or evidence, or turn review-tool failures into owner decisions.
+
+**Rationale:** Delegated Gate-`AI` merge authorization is safe only when the
+semantic decision is independently reproducible, tied to the content actually
+reviewed, and separated from implementation and merge mechanics.
+
+**Consequences:** A moved or later substantively changed HEAD requires review
+again. Correctable defects and worker-suppliable evidence gaps are `AI_REWORK`;
+only genuinely owner-reserved choices are `HUMAN_REQUIRED`. A review execution
+failure publishes no semantic decision. GOV-006's strictly allowlisted closure
+may preserve approval without a second semantic review, but the finalizer cannot
+make or repair the supervisor's judgment.

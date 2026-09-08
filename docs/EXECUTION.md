@@ -41,6 +41,14 @@ The conceptual flow remains:
 
 `governance contract -> execution adapter -> scheduler/runtime`
 
+Across review and completion, the role flow is:
+
+`heartbeat/runtime -> CODEX WORKER -> PR/evidence -> AI SUPERVISOR -> durable decision -> mechanical finalizer (when authorized) -> durable closure -> merge`
+
+The first diagram separates portable execution layers; the second separates
+principals. Neither makes the supervisor an adapter, scheduler, worker, or
+finalizer.
+
 ### Governance-aware worker
 
 The worker applies authority, states, gates, heartbeat priority, and semantic selection from `AUTONOMY.md`. Only this layer determines whether durable state permits a transition and performs authorized checkpoint work.
@@ -67,6 +75,15 @@ The scheduler/runtime:
 - terminates.
 
 It does not interpret the queue semantically or select priorities beyond invoking the governance-aware worker. Time remaining after an invocation does not authorize another checkpoint.
+
+### Review and finalization boundary
+
+The AI SUPERVISOR consumes a review-ready PR and observable repository/GitHub
+evidence, re-confirms its exact HEAD before publishing one durable decision, and
+does not modify substantive work. The mechanical finalizer consumes a valid
+Gate-`AI` approval and verifies closure conditions; it cannot supply semantic
+judgment or repair evidence. Review execution failures publish no decision and
+remain execution failures rather than automatic human escalation.
 
 ## Mutual exclusion and technical preflight
 

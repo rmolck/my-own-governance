@@ -30,6 +30,25 @@ Reviews scope, correctness, diff, checks, documentation, architecture, evidence,
 
 A top-level PR comment is sufficient; the protocol does not depend on formal GitHub review approval. The supervisor decides and authorizes but neither needs to execute the merge nor writes directly to `main`. It does not repeat a decision for the same HEAD unless a relevant change invalidates it. Correctable, in-scope problems require `AI_REWORK`, not human escalation. For Gate `AI`, approval of the relevant PR HEAD means semantic completion and delegates merge authorization subject to the mechanical safeguards below. It never delegates a Gate `HUMAN` merge or a human-reserved decision.
 
+The supervisor reviews one already-selected checkpoint/PR; it is not a worker,
+scheduler, heartbeat, or finalizer and does not implement fixes, select or start
+another checkpoint, create requirements, or manufacture evidence. It must
+establish the repository, checkpoint, branch, PR, gate/state, and exact HEAD;
+inspect the real diff against the authorized objective and normative documents;
+and assess observable test/check evidence, relevant mergeability, and human
+authority boundaries. Missing or inaccessible evidence must remain missing or
+become an actionable `AI_REWORK` finding as appropriate—never an invented pass.
+An execution/tool failure that prevents a trustworthy review produces no
+decision and is not by itself `HUMAN_REQUIRED`.
+
+The decision must identify the reviewed PR and exact substantive HEAD. The
+supervisor obtains HEAD A, reviews evidence for A, and immediately before
+publishing re-reads the PR HEAD. It may publish the decision bound to A only if
+the PR remains at A; movement requires review of the new HEAD. A later
+substantive commit invalidates approval, as does a later `AI_REWORK` or
+`HUMAN_REQUIRED`. Only the strictly derived mechanical closure described below
+preserves approval without another semantic review.
+
 ### GITHUB
 
 Provides durable persistence and traceability through branches, commits, PRs, comments/reviews, and checks. GITHUB is not an intelligent agent: it records evidence and coordination but neither decides what is authorized nor grants or expands the authority of HUMAN OWNER, CODEX WORKER, or AI SUPERVISOR.
