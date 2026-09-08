@@ -4,11 +4,10 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Complete AI SUPERVISOR review of GOV-007's delegated-merge contract model.
+- Execute GOV-008 end-to-end acceptance validation of the autonomous governance protocol.
 
 ## Next
 
-- Execute acceptance tests.
 - Define reusable adoption and synchronization.
 
 Codex CLI and systemd reference implementations are not normative requirements of the portable autonomy protocol.

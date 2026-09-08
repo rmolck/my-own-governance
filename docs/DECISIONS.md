@@ -106,3 +106,20 @@ only genuinely owner-reserved choices are `HUMAN_REQUIRED`. A review execution
 failure publishes no semantic decision. GOV-006's strictly allowlisted closure
 may preserve approval without a second semantic review, but the finalizer cannot
 make or repair the supervisor's judgment.
+
+## D-012 — Acceptance validation composes test-only protocol oracles
+
+**Decision:** Validate the end-to-end governance protocol with a deterministic,
+test-only composition fixture that delegates heartbeat selection/finalization
+and supervisor review to their existing structured oracles. It is not a new
+production runtime, worker, scheduler, finalizer, or source of authority.
+
+**Rationale:** Unit-level validation can miss incompatible outcomes, HEAD
+bindings, closure formats, and authority assumptions at layer boundaries.
+Composition makes those contracts executable without pretending to perform a
+live model review, GitHub operation, or merge.
+
+**Consequences:** Acceptance PASS requires the reproducible suite, not a manual
+assertion. The supervisor closure oracle now accepts the same optional,
+strictly-derived approval-result metadata that the heartbeat/finalizer oracle
+and `AUTONOMY.md` already accepted; all other closure metadata remains invalid.
