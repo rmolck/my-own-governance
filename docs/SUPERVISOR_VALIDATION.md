@@ -58,8 +58,15 @@ and synchronization remain outside GOV-007.
 
 ## Rework validation evidence
 
-The rework suite contains 55 tests, including 15 supervisor-specific tests.
+For PR #11 HEAD `1822c19d2b20b4bb943795112f795eb939366ff0`, the
+rework suite contains 55 tests, including 15 supervisor-specific tests.
 The complete and focused suites pass, as do Python compilation,
 `git diff --check`, the directed semantic-contradiction inspection, and the patch
 credential-pattern scan. These are local deterministic checks; they do not
 claim a live supervisor, GitHub-comment, or merge integration.
+
+This record supersedes the PR body's earlier 54-test / 14-supervisor-test and
+“no remote PR” statements. PR #11 exists on branch
+`codex/crear-checkpoint-gov-007-para-ai-supervisor`; those earlier statements
+describe a pre-publication environment and are not evidence for the reviewed
+HEAD.
