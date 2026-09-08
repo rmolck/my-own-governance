@@ -76,6 +76,15 @@ class SupervisorContractTest(unittest.TestCase):
                        "before": "AI_REVIEW", "after": "DONE"}]}
         self.assertTrue(mechanical_closure_preserves_review(decision, closure))
 
+    def test_s08_approval_cannot_close_a_different_checkpoint(self):
+        item = candidate(checkpoint="GOV-X")
+        decision = review(item, lambda: item["head"])
+        closure = {"parent": item["head"], "files": ["docs/WORK_QUEUE.md"],
+                   "checkpoint": "GOV-Y", "changes": [{
+                       "checkpoint": "GOV-Y", "field": "state",
+                       "before": "AI_REVIEW", "after": "DONE"}]}
+        self.assertFalse(mechanical_closure_preserves_review(decision, closure))
+
     def test_s09_missing_tests_never_become_passed(self):
         item = candidate(tests={"required": True, "status": "not_run"})
         decision = review(item, lambda: item["head"])

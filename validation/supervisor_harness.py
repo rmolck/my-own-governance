@@ -25,6 +25,7 @@ class ReviewDecision:
     value: str
     head: str
     pr: int
+    checkpoint: str
     findings: tuple[str, ...] = ()
     merge_authorized: bool = False
 
@@ -34,6 +35,7 @@ class ReviewDecision:
             "body": self.value,
             "head": self.head,
             "pr": self.pr,
+            "checkpoint": self.checkpoint,
             "findings": list(self.findings),
         }
 
@@ -103,6 +105,7 @@ def review(
         value=value,
         head=reviewed_head,
         pr=candidate["pr"],
+        checkpoint=candidate["checkpoint"],
         findings=tuple(findings),
         merge_authorized=(value == APPROVED and candidate.get("gate") == "AI"),
     )
@@ -120,6 +123,7 @@ def mechanical_closure_preserves_review(
     return (
         decision.merge_authorized
         and closure.get("parent") == decision.head
+        and closure.get("checkpoint") == decision.checkpoint
         and closure.get("files") == ["docs/WORK_QUEUE.md"]
         and closure.get("changes") == [{
             "checkpoint": closure.get("checkpoint"),
@@ -127,5 +131,4 @@ def mechanical_closure_preserves_review(
             "before": "AI_REVIEW",
             "after": "DONE",
         }]
-        and bool(closure.get("checkpoint"))
     )

@@ -34,6 +34,7 @@ retargets a decision to a later HEAD.
 | S-06 | Approval publication | decision/comment bind exactly to reviewed PR HEAD |
 | S-07 | Later substantive HEAD | prior approval is invalid for that HEAD |
 | S-08 | Strict GOV-006 closure | approval is preserved without second semantic review |
+| S-08b | Closure names a different checkpoint | approval is not preserved |
 | S-09 | Required tests absent/not run | `AI_REWORK`; never a false pass |
 | S-10 | Tool/runtime error | execution failure, not automatic `HUMAN_REQUIRED` |
 | S-11 | Another checkpoint is ready | input remains unchanged; no selection or start occurs |
@@ -54,3 +55,11 @@ merges, enables auto-merge, or deploys periodic execution. Fixture evidence is
 synthetic and proves only the deterministic contract. Provider/model choice,
 production credentials, deployment, a production finalizer, consumer adoption,
 and synchronization remain outside GOV-007.
+
+## Rework validation evidence
+
+The rework suite contains 55 tests, including 15 supervisor-specific tests.
+The complete and focused suites pass, as do Python compilation,
+`git diff --check`, the directed semantic-contradiction inspection, and the patch
+credential-pattern scan. These are local deterministic checks; they do not
+claim a live supervisor, GitHub-comment, or merge integration.
