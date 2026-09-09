@@ -151,9 +151,15 @@ class AcceptanceProtocolTest(unittest.TestCase):
                 "raise SystemExit(70)\n"
             )
             fake.chmod(fake.stat().st_mode | stat.S_IXUSR)
+            recovery = Path(directory) / "recovery"
+            recovery.write_text(
+                "#!/bin/sh\nprintf '{\"action\":\"invoke_worker\"}\\n'\n"
+            )
+            recovery.chmod(recovery.stat().st_mode | stat.S_IXUSR)
             env = os.environ | {"GOVERNANCE_REPOSITORY": str(repo),
                                 "GOVERNANCE_ADAPTER": str(fake),
                                 "GOVERNANCE_PYTHON": sys.executable,
+                                "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
                                 "GOVERNANCE_LOCK_FILE": str(Path(directory) / "lock")}
             runtime = subprocess.run([sys.executable, str(RUNNER)], env=env,
                                      capture_output=True, text=True)

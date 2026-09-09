@@ -13,6 +13,8 @@ import subprocess
 import sys
 import time
 
+from host_boundary import parse_argv, run_process
+
 
 VALID = 0
 INVALID = 65
@@ -38,13 +40,6 @@ def emit(repository: Path, **values: object) -> dict[str, object]:
     summary.update(values)
     print(json.dumps(summary, sort_keys=True), flush=True)
     return summary
-
-
-def run_command(command: str, repository: Path) -> subprocess.CompletedProcess[str]:
-    """Run one configured mechanical phase without shell interpretation."""
-    import shlex
-    return subprocess.run(shlex.split(command), cwd=repository, capture_output=True,
-                          text=True, check=False)
 
 
 def append_evidence(path: Path | None, summary: dict[str, object]) -> None:
@@ -95,9 +90,16 @@ def run() -> int:
             "GOVERNANCE_EVIDENCE_FILE",
             str(repository / ".git" / "governance-runtime" / "runs.jsonl"),
         )).expanduser().resolve()
-        refresh_command = os.environ.get("GOVERNANCE_REFRESH_COMMAND")
-        finalizer_command = os.environ.get("GOVERNANCE_FINALIZER_COMMAND")
-        host_post_worker_command = os.environ.get("GOVERNANCE_HOST_POST_WORKER_COMMAND")
+        phase_values = {
+            "refresh_pre": os.environ.get("GOVERNANCE_REFRESH_ARGV"),
+            "finalizer_pre": os.environ.get("GOVERNANCE_FINALIZER_ARGV"),
+            "recovery_pre_worker": os.environ.get("GOVERNANCE_RECOVERY_ARGV"),
+            "host_post_worker": os.environ.get("GOVERNANCE_HOST_POST_WORKER_ARGV"),
+        }
+        phase_argv = {
+            name: parse_argv(value) if value else None
+            for name, value in phase_values.items()
+        }
         python = executable(os.environ.get("GOVERNANCE_PYTHON", sys.executable))
         if not repository.is_dir() or not (repository / ".git").exists():
             raise ValueError("repository is not a usable Git checkout/worktree")
@@ -120,20 +122,20 @@ def run() -> int:
 
             phases: list[dict[str, object]] = []
             for phase in ("refresh_pre", "finalizer_pre"):
-                configured = refresh_command if phase == "refresh_pre" else finalizer_command
+                configured = phase_argv[phase]
                 if not configured:
                     phases.append({"phase": phase, "classification": "not_configured"})
                     continue
-                completed_phase = run_command(configured, repository)
-                item = {"phase": phase, "exit_status": completed_phase.returncode,
-                        "classification": "completed" if completed_phase.returncode == 0 else "failed"}
-                if phase == "finalizer_pre" and completed_phase.returncode == 0:
+                completed_phase = run_process(configured, repository)
+                item = {"phase": phase, "exit_status": completed_phase.exit_status,
+                        "classification": completed_phase.classification}
+                if phase == "finalizer_pre" and completed_phase.classification == "completed":
                     try:
                         item["outcome"] = json.loads(completed_phase.stdout).get("outcome")
                     except (json.JSONDecodeError, AttributeError):
                         item["classification"] = "failed"
                 phases.append(item)
-                if item.get("classification") == "failed":
+                if item.get("classification") != "completed":
                     summary = emit(repository, lock_acquired=True, classification="preflight_failure",
                                    phases=phases, runner_started_at=runner_started_at,
                                    runner_wall_seconds=round(time.monotonic() - runner_started, 6),
@@ -141,7 +143,7 @@ def run() -> int:
                     append_evidence(evidence_file, summary)
                     return EXECUTION_FAILURE
                 if item.get("outcome") == "finalized":
-                    if not refresh_command:
+                    if not phase_argv["refresh_pre"]:
                         summary = emit(
                             repository, lock_acquired=True,
                             classification="preflight_failure", phases=phases,
@@ -151,13 +153,13 @@ def run() -> int:
                         )
                         append_evidence(evidence_file, summary)
                         return EXECUTION_FAILURE
-                    refreshed = run_command(refresh_command, repository)
+                    refreshed = run_process(phase_argv["refresh_pre"], repository)
                     phases.append({
                         "phase": "refresh_after_finalization",
-                        "exit_status": refreshed.returncode,
-                        "classification": "completed" if refreshed.returncode == 0 else "failed",
+                        "exit_status": refreshed.exit_status,
+                        "classification": refreshed.classification,
                     })
-                    if refreshed.returncode != 0:
+                    if refreshed.classification != "completed":
                         summary = emit(
                             repository, lock_acquired=True,
                             classification="preflight_failure", phases=phases,
@@ -168,6 +170,62 @@ def run() -> int:
                         append_evidence(evidence_file, summary)
                         return EXECUTION_FAILURE
 
+            recovery = phase_argv["recovery_pre_worker"]
+            if recovery:
+                completed_recovery = run_process(recovery, repository)
+                recovery_phase: dict[str, object] = {
+                    "phase": "recovery_pre_worker",
+                    "exit_status": completed_recovery.exit_status,
+                    "classification": completed_recovery.classification,
+                }
+                if completed_recovery.classification == "completed":
+                    try:
+                        recovery_payload = json.loads(completed_recovery.stdout)
+                        recovery_action = recovery_payload.get("action")
+                    except (json.JSONDecodeError, AttributeError):
+                        recovery_action = None
+                    if recovery_action not in {
+                        "invoke_worker", "reconciled_no_action",
+                        "reconcile_existing_publication",
+                    }:
+                        recovery_phase["classification"] = "invalid_result"
+                    else:
+                        recovery_phase["action"] = recovery_action
+                phases.append(recovery_phase)
+                if recovery_phase["classification"] != "completed":
+                    summary = emit(
+                        repository, lock_acquired=True,
+                        classification="recovery_failure", phases=phases,
+                        runner_started_at=runner_started_at,
+                        runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                        technical_error="pre-worker recovery failed closed",
+                    )
+                    append_evidence(evidence_file, summary)
+                    return EXECUTION_FAILURE
+                if recovery_action != "invoke_worker":
+                    summary = emit(
+                        repository, lock_acquired=True,
+                        classification="reconciled_no_action", phases=phases,
+                        runner_started_at=runner_started_at,
+                        runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                    )
+                    append_evidence(evidence_file, summary)
+                    return VALID
+            else:
+                phases.append({
+                    "phase": "recovery_pre_worker",
+                    "classification": "missing_required_configuration",
+                })
+                summary = emit(
+                    repository, lock_acquired=True,
+                    classification="recovery_failure", phases=phases,
+                    runner_started_at=runner_started_at,
+                    runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                    technical_error="pre-worker recovery is required",
+                )
+                append_evidence(evidence_file, summary)
+                return EXECUTION_FAILURE
+
             command = [python, str(adapter), str(repository)]
             codex = os.environ.get("GOVERNANCE_CODEX_EXECUTABLE")
             output_dir = os.environ.get("GOVERNANCE_ADAPTER_OUTPUT_DIR")
@@ -177,7 +235,9 @@ def run() -> int:
                 command.extend(["--output-dir", str(Path(output_dir).expanduser().resolve())])
 
             adapter_launched = True
-            completed = subprocess.run(command, capture_output=True, text=True, check=False)
+            completed = subprocess.run(command, capture_output=True, text=True,
+                                       encoding="utf-8", errors="replace", shell=False,
+                                       check=False)
             artifacts = None
             technical_error = None
             try:
@@ -193,15 +253,13 @@ def run() -> int:
                 codex_wall_seconds = None
 
             host_post_worker_failed = False
-            if host_post_worker_command:
-                host_post_worker = run_command(host_post_worker_command, repository)
-                host_post_worker_failed = host_post_worker.returncode != 0
+            if phase_argv["host_post_worker"]:
+                host_post_worker = run_process(phase_argv["host_post_worker"], repository)
+                host_post_worker_failed = host_post_worker.classification != "completed"
                 phases.append({
                     "phase": "host_post_worker",
-                    "exit_status": host_post_worker.returncode,
-                    "classification": (
-                        "completed" if not host_post_worker_failed else "failed"
-                    ),
+                    "exit_status": host_post_worker.exit_status,
+                    "classification": host_post_worker.classification,
                 })
             else:
                 phases.append({

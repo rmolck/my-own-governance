@@ -92,9 +92,44 @@ durable branch/PR state. When Codex lacked publication capability, it may perfor
 only narrowly authorized mechanics needed to publish the worker result, with fresh
 state and validation safeguards. It must preserve missing publication as missing,
 not assert `AI_REVIEW` or other GitHub state prematurely. The portable architecture
-does not require Codex to hold GitHub credentials. Full privileged publication,
-recovery/idempotency, path validation, and credential design remain deployment or
-follow-on architecture concerns.
+does not require Codex to hold GitHub credentials. The reference defaults to worker-capable publication (Model A): a capable worker may
+commit, push, and open/update the initial PR, while the host validates and reconciles
+what actually became durable. A deployment may instead use host-owned publication
+(Model B) when its integration provides the same fail-closed validation and durable
+identity inputs. In either model, credentials belong only to the component performing
+the publication operation and are supplied outside public artifacts.
+
+### Recovery, identity, and changed-state validation
+
+Every host phase begins from freshly refreshed durable state. Local completion flags
+are diagnostic only. If a legitimate PR or branch already exists, the host preserves
+that identity and reconciles it; it never derives or publishes a duplicate. Durable
+`AI_REVIEW` for the current PR is already-completed publication even when a prior
+local result or evidence append is absent. Derivation is permitted only when no
+active durable identity or colliding remote branch exists. A contradictory PR,
+branch, local HEAD, or ref fails closed.
+
+Before host-owned publication, the host obtains a NUL-delimited Git status including
+all untracked paths, resolves symbolic branch and HEAD, and compares every tracked
+and untracked changed path with an explicit allowlist supplied by the integration.
+It classifies clean state, expected modifications, unexpected tracked modifications,
+unexpected untracked paths, and branch/ref mismatch. Only clean or wholly expected
+changes are publishable; this validates mechanics, never semantic correctness.
+
+After refresh and the finalizer pre-pass, the host executes a bounded mechanical
+recovery/reconciliation boundary before launching the worker. Its only decisions are
+to invoke the worker, reconcile already-existing publication, or record that no
+worker action remains. Existing durable `AI_REVIEW` and legitimate publication skip
+the worker. A launch error, nonzero exit, malformed response, unknown action, or
+ambiguous identity is an execution failure and prevents worker launch.
+The hardened reference automated runtime requires this recovery capability;
+omitting it fails closed and cannot silently mean `invoke_worker`.
+
+Host subprocess interfaces are structured argv arrays, run without a shell, and use
+explicit UTF-8 text decoding. Output is bounded and private by default. Launch failure
+(no child exists) and child nonzero exit are distinct from worker, publication, and
+finalizer outcomes in evidence. A failed publication remains a publication failure:
+it must not be reported as `AI_REVIEW` or as worker failure.
 
 ### Review and finalization boundary
 

@@ -34,6 +34,13 @@ class SystemdRunnerTest(unittest.TestCase):
         self.adapter.write_text(FAKE_ADAPTER)
         self.adapter.chmod(self.adapter.stat().st_mode | stat.S_IXUSR)
         self.lock = self.directory / "runtime.lock"
+        self.default_recovery = self.directory / "default-recovery"
+        self.default_recovery.write_text(
+            "#!/bin/sh\nprintf '{\"action\":\"invoke_worker\"}\\n'\n"
+        )
+        self.default_recovery.chmod(
+            self.default_recovery.stat().st_mode | stat.S_IXUSR
+        )
         self.durable = self.repository / "checkpoint-state"
         self.durable.write_text("WORKING")
         self.env = os.environ | {
@@ -41,6 +48,7 @@ class SystemdRunnerTest(unittest.TestCase):
             "GOVERNANCE_ADAPTER": str(self.adapter),
             "GOVERNANCE_PYTHON": sys.executable,
             "GOVERNANCE_LOCK_FILE": str(self.lock),
+            "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(self.default_recovery)]),
             "FAKE_ADAPTER_COUNTER": str(self.directory / "counter"),
             "FAKE_ADAPTER_ARGS": str(self.directory / "args"),
         }
@@ -71,7 +79,8 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertEqual(summary["classification"], "valid_completion")
         self.assertGreaterEqual(summary["runner_wall_seconds"], 0)
         self.assertEqual([phase["phase"] for phase in summary["phases"]],
-                         ["refresh_pre", "finalizer_pre", "host_post_worker"])
+                         ["refresh_pre", "finalizer_pre", "recovery_pre_worker",
+                          "host_post_worker"])
         evidence = self.repository / ".git" / "governance-runtime" / "runs.jsonl"
         self.assertEqual(len(evidence.read_text().splitlines()), 1)
 
@@ -81,8 +90,8 @@ class SystemdRunnerTest(unittest.TestCase):
         finalizer = self.phase_script(
             "finalizer", f'echo finalizer >> "{order}"\nprintf \'{{"outcome":"finalized"}}\\n\'\n')
         result = self.invoke(env=self.env | {
-            "GOVERNANCE_REFRESH_COMMAND": str(refresh),
-            "GOVERNANCE_FINALIZER_COMMAND": str(finalizer),
+            "GOVERNANCE_REFRESH_ARGV": json.dumps([str(refresh)]),
+            "GOVERNANCE_FINALIZER_ARGV": json.dumps([str(finalizer)]),
         })
         self.assertEqual(result.returncode, 0)
         self.assertEqual((self.directory / "counter").read_text(), "x")
@@ -90,17 +99,72 @@ class SystemdRunnerTest(unittest.TestCase):
                          ["refresh", "finalizer", "refresh"])
         self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
                          ["refresh_pre", "finalizer_pre", "refresh_after_finalization",
-                          "host_post_worker"])
+                          "recovery_pre_worker", "host_post_worker"])
 
     def test_worker_completion_never_triggers_finalizer_post_pass(self):
         count = self.directory / "finalizer-count"
         finalizer = self.phase_script(
             "finalizer", f'echo x >> "{count}"\nprintf \'{{"outcome":"ineligible"}}\\n\'\n')
-        result = self.invoke(env=self.env | {"GOVERNANCE_FINALIZER_COMMAND": str(finalizer)})
+        result = self.invoke(env=self.env | {"GOVERNANCE_FINALIZER_ARGV": json.dumps([str(finalizer)])})
         self.assertEqual(result.returncode, 0)
         self.assertEqual(count.read_text().splitlines(), ["x"])
         self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
-                         ["refresh_pre", "finalizer_pre", "host_post_worker"])
+                         ["refresh_pre", "finalizer_pre", "recovery_pre_worker",
+                          "host_post_worker"])
+
+    def recovery_script(self, action=None, exit_status=0, output=None, name="recovery"):
+        if output is None:
+            output = json.dumps({"action": action})
+        return self.phase_script(
+            name, f"printf '%s\\n' {json.dumps(output)}\nexit {exit_status}\n",
+        )
+
+    def test_durable_ai_review_recovery_skips_worker(self):
+        recovery = self.recovery_script("reconciled_no_action")
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
+        })
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse((self.directory / "counter").exists())
+        summary = self.summary(result)
+        self.assertEqual(summary["classification"], "reconciled_no_action")
+        self.assertEqual(summary["phases"][-1]["action"], "reconciled_no_action")
+
+    def test_existing_publication_is_reconciled_without_worker(self):
+        recovery = self.recovery_script("reconcile_existing_publication")
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
+        })
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse((self.directory / "counter").exists())
+        self.assertEqual(self.summary(result)["phases"][-1]["action"],
+                         "reconcile_existing_publication")
+
+    def test_recovery_allows_genuinely_new_work_once(self):
+        recovery = self.recovery_script("invoke_worker")
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
+        })
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual((self.directory / "counter").read_text(), "x")
+
+    def test_recovery_failure_or_malformed_result_fails_closed(self):
+        cases = (
+            self.recovery_script(exit_status=9, output="failed", name="recovery-exit"),
+            self.recovery_script(output="not-json", name="recovery-malformed"),
+            self.recovery_script(output=json.dumps({"action": "unknown"}),
+                                 name="recovery-unknown"),
+        )
+        for recovery in cases:
+            with self.subTest(recovery=recovery):
+                (self.directory / "counter").unlink(missing_ok=True)
+                result = self.invoke(env=self.env | {
+                    "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
+                })
+                self.assertEqual(result.returncode, 70)
+                self.assertFalse((self.directory / "counter").exists())
+                self.assertEqual(self.summary(result)["classification"],
+                                 "recovery_failure")
 
     def test_host_post_worker_runs_after_worker(self):
         observation = self.directory / "host-observation"
@@ -110,7 +174,7 @@ class SystemdRunnerTest(unittest.TestCase):
             f'printf reconciled > "{observation}"\n',
         )
         result = self.invoke(env=self.env | {
-            "GOVERNANCE_HOST_POST_WORKER_COMMAND": str(host),
+            "GOVERNANCE_HOST_POST_WORKER_ARGV": json.dumps([str(host)]),
         })
         self.assertEqual(result.returncode, 0)
         self.assertEqual(observation.read_text(), "reconciled")
@@ -122,13 +186,13 @@ class SystemdRunnerTest(unittest.TestCase):
     def test_host_post_worker_failure_overrides_worker_success(self):
         host = self.phase_script("host-post-worker", "exit 9\n")
         result = self.invoke(env=self.env | {
-            "GOVERNANCE_HOST_POST_WORKER_COMMAND": str(host),
+            "GOVERNANCE_HOST_POST_WORKER_ARGV": json.dumps([str(host)]),
         })
         self.assertEqual(result.returncode, 70)
         summary = self.summary(result)
         self.assertEqual(summary["classification"], "runner_internal_failure")
         self.assertEqual(summary["technical_error"], "host_post_worker failed")
-        self.assertEqual(summary["phases"][-1]["classification"], "failed")
+        self.assertEqual(summary["phases"][-1]["classification"], "child_nonzero")
 
     def phase_script(self, name, body):
         script = self.directory / name
@@ -141,8 +205,8 @@ class SystemdRunnerTest(unittest.TestCase):
                                     f'touch "{self.directory / "refreshed"}"\n')
         finalizer = self.phase_script("finalizer", 'printf \'{"outcome":"finalized"}\\n\'\n')
         result = self.invoke(env=self.env | {
-            "GOVERNANCE_REFRESH_COMMAND": str(refresh),
-            "GOVERNANCE_FINALIZER_COMMAND": str(finalizer),
+            "GOVERNANCE_REFRESH_ARGV": json.dumps([str(refresh)]),
+            "GOVERNANCE_FINALIZER_ARGV": json.dumps([str(finalizer)]),
         })
         self.assertEqual(result.returncode, 70)
         summary = self.summary(result)
@@ -213,6 +277,30 @@ class SystemdRunnerTest(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((self.directory / "counter").exists())
+
+    def test_phase_requires_structured_argv(self):
+        result = self.invoke(env=self.env | {"GOVERNANCE_REFRESH_ARGV": "/bin/true"})
+        self.assertEqual(result.returncode, 70)
+        self.assertEqual(self.summary(result)["classification"], "preflight_failure")
+
+    def test_missing_recovery_configuration_fails_closed_without_worker(self):
+        env = self.env.copy()
+        del env["GOVERNANCE_RECOVERY_ARGV"]
+        result = self.invoke(env=env)
+        self.assertEqual(result.returncode, 70)
+        self.assertFalse((self.directory / "counter").exists())
+        summary = self.summary(result)
+        self.assertEqual(summary["classification"], "recovery_failure")
+        self.assertEqual(summary["phases"][-1]["classification"],
+                         "missing_required_configuration")
+
+    def test_missing_phase_executable_is_distinct_launch_failure(self):
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_REFRESH_ARGV": json.dumps([str(self.directory / "missing")]),
+        })
+        self.assertEqual(result.returncode, 70)
+        self.assertEqual(self.summary(result)["phases"][0]["classification"],
+                         "launch_failure")
 
     def test_source_has_no_retry_or_repository_mutation_commands(self):
         source = RUNNER.read_text()

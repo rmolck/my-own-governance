@@ -116,6 +116,23 @@ Do **not** use it for naming, local organization, test structure, small refactor
 
 Use it for observable behavior, product requirements, significant architecture, data model, compatibility, security, persistence, data-loss risk, credentials, production, irreversible operations, external contracts, a lack of evidence that forces an unsupported choice, business rules, relevant UX, or alternatives with materially different consequences.
 
+## Durable recovery and publication reconciliation
+
+Fresh Git/GitHub state is the recovery journal for repository side effects. A later
+wake treats an existing legitimate branch/PR and durable `AI_REVIEW` as completed
+work even when the previous process stopped before recording local evidence. The
+host reconciles those identities rather than invoking Codex again, deriving a new
+branch, or duplicating publication. Local runtime evidence never overrides durable
+state. Ambiguous, conflicting, or unexpected Git state fails closed without a
+semantic inference.
+
+The reference publication model permits a capable worker to publish and makes the
+post-worker host verify/reconcile or narrowly complete missing mechanics. A
+credential-isolated deployment may give publication to the host instead, provided
+it validates branch, ref, tracked and untracked paths and preserves the same
+worker/orchestrator/supervisor authority. Neither model makes the host a selector,
+supervisor, or post-worker finalizer.
+
 ## Outcomes and execution failures
 
 - **`NO_OP`** is an invocation outcome, not a checkpoint state. It means the protocol evaluation completed validly but found no autonomous transition authorized by current durable state.
