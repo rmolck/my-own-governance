@@ -28,8 +28,10 @@ sudo install -m 0644 runtime/systemd/runtime.env.example /etc/my-own-governance/
 sudo systemctl daemon-reload
 ```
 
-Edit `/etc/my-own-governance/runtime.env` for the deployment. The only required
-setting is `GOVERNANCE_REPOSITORY`, the target Git checkout/worktree. Optional
+Edit `/etc/my-own-governance/runtime.env` for the deployment. The required
+settings are `GOVERNANCE_REPOSITORY`, the target Git checkout/worktree, and
+`GOVERNANCE_RECOVERY_ARGV`, the deployment's fresh-state reconciliation command.
+Missing recovery configuration fails closed before Codex is launched. Optional
 technical settings select Python, the adapter, Codex CLI, the lock file, and the
 adapter artifact directory. They do not select semantic work. Do not place
 credentials in this public example or in unit files; supply any required agent
@@ -108,7 +110,9 @@ once; failure or missing refresh fails closed. The recovery command runs after f
 adapter. It emits exactly one JSON object whose `action` is `invoke_worker`,
 `reconciled_no_action`, or `reconcile_existing_publication`. The latter two skip
 Codex successfully; launch, nonzero, malformed, or unknown results fail closed and
-skip Codex. This lets a provider integration report already-durable branch/PR state
+skip Codex. Missing recovery configuration also fails closed; there is no implicit
+non-recovery autonomous mode in the reference runner. This lets a provider
+integration report already-durable branch/PR state
 without transferring semantic selection to the runner. Worker completion does not
 invoke a finalizer post-pass. After Codex returns, the host command runs once to inspect and
 reconcile actual results and may support narrowly authorized publication when the

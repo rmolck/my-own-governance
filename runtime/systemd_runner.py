@@ -214,8 +214,17 @@ def run() -> int:
             else:
                 phases.append({
                     "phase": "recovery_pre_worker",
-                    "classification": "not_configured",
+                    "classification": "missing_required_configuration",
                 })
+                summary = emit(
+                    repository, lock_acquired=True,
+                    classification="recovery_failure", phases=phases,
+                    runner_started_at=runner_started_at,
+                    runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                    technical_error="pre-worker recovery is required",
+                )
+                append_evidence(evidence_file, summary)
+                return EXECUTION_FAILURE
 
             command = [python, str(adapter), str(repository)]
             codex = os.environ.get("GOVERNANCE_CODEX_EXECUTABLE")

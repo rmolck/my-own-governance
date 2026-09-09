@@ -122,6 +122,8 @@ to invoke the worker, reconcile already-existing publication, or record that no
 worker action remains. Existing durable `AI_REVIEW` and legitimate publication skip
 the worker. A launch error, nonzero exit, malformed response, unknown action, or
 ambiguous identity is an execution failure and prevents worker launch.
+The hardened reference automated runtime requires this recovery capability;
+omitting it fails closed and cannot silently mean `invoke_worker`.
 
 Host subprocess interfaces are structured argv arrays, run without a shell, and use
 explicit UTF-8 text decoding. Output is bounded and private by default. Launch failure

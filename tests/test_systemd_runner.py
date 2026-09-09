@@ -34,6 +34,13 @@ class SystemdRunnerTest(unittest.TestCase):
         self.adapter.write_text(FAKE_ADAPTER)
         self.adapter.chmod(self.adapter.stat().st_mode | stat.S_IXUSR)
         self.lock = self.directory / "runtime.lock"
+        self.default_recovery = self.directory / "default-recovery"
+        self.default_recovery.write_text(
+            "#!/bin/sh\nprintf '{\"action\":\"invoke_worker\"}\\n'\n"
+        )
+        self.default_recovery.chmod(
+            self.default_recovery.stat().st_mode | stat.S_IXUSR
+        )
         self.durable = self.repository / "checkpoint-state"
         self.durable.write_text("WORKING")
         self.env = os.environ | {
@@ -41,6 +48,7 @@ class SystemdRunnerTest(unittest.TestCase):
             "GOVERNANCE_ADAPTER": str(self.adapter),
             "GOVERNANCE_PYTHON": sys.executable,
             "GOVERNANCE_LOCK_FILE": str(self.lock),
+            "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(self.default_recovery)]),
             "FAKE_ADAPTER_COUNTER": str(self.directory / "counter"),
             "FAKE_ADAPTER_ARGS": str(self.directory / "args"),
         }
@@ -274,6 +282,17 @@ class SystemdRunnerTest(unittest.TestCase):
         result = self.invoke(env=self.env | {"GOVERNANCE_REFRESH_ARGV": "/bin/true"})
         self.assertEqual(result.returncode, 70)
         self.assertEqual(self.summary(result)["classification"], "preflight_failure")
+
+    def test_missing_recovery_configuration_fails_closed_without_worker(self):
+        env = self.env.copy()
+        del env["GOVERNANCE_RECOVERY_ARGV"]
+        result = self.invoke(env=env)
+        self.assertEqual(result.returncode, 70)
+        self.assertFalse((self.directory / "counter").exists())
+        summary = self.summary(result)
+        self.assertEqual(summary["classification"], "recovery_failure")
+        self.assertEqual(summary["phases"][-1]["classification"],
+                         "missing_required_configuration")
 
     def test_missing_phase_executable_is_distinct_launch_failure(self):
         result = self.invoke(env=self.env | {
