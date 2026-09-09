@@ -140,9 +140,12 @@ and `AUTONOMY.md` already accepted; all other closure metadata remains invalid.
 **Rationale:** Assigning each operation to the least-semantic capable actor avoids using commits to simulate unavailable GitHub metadata, permits deterministic finalization, reduces prompt drift, and makes cadence changes evidence-driven.
 
 **Consequences:** The reference order is fresh refresh, finalizer pre-pass, a
-second fresh refresh/reconciliation after successful finalization, and one worker
-invocation when the refreshed contract authorizes it. There is no finalizer
-post-pass after the worker. A finalized PR and a later worker transition are
+second host refresh/reconciliation after successful finalization, one worker
+invocation when the refreshed contract authorizes it, and a mechanical host
+post-worker inspect/reconcile/publish boundary. There is no finalizer post-pass
+after the worker. The host can verify an already-published result or perform only
+narrowly authorized publication mechanics when Codex lacks GitHub capability;
+worker-held GitHub credentials are not an invariant. A finalized PR and a later worker transition are
 separate principal units that may share one wake; the finalizer itself never
 selects or invokes work. This owner clarification supersedes D-013's original
 wording that finalization consumed the whole wake. The initial `:00` worker and

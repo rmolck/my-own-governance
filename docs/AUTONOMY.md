@@ -149,11 +149,17 @@ worker transition may share a wake only after the runner refreshes durable state
 they remain separate principal units and the worker still processes at most one
 checkpoint/PR.
 
-The reference runtime sequence is: acquire lock, refresh, finalizer pre-pass,
-finalize eligible approved work, refresh and reconcile after any finalization,
-invoke the worker once if the refreshed contract authorizes it, record, and release
-the lock. Codex completion never triggers a finalizer post-pass: a new approval
-cannot exist until the supervisor's later opportunity. Alternating `:00`
+The reference runtime sequence is: acquire lock, host refresh/reconcile, finalizer
+pre-pass, finalize eligible approved work, host refresh/reconcile after any
+finalization, invoke the worker once if the refreshed contract authorizes it,
+run a mechanical host post-worker inspect/reconcile/publish phase, record, and
+release the lock. Codex completion never triggers a finalizer post-pass: a new
+approval cannot exist until the supervisor's later opportunity. The host phase is
+not a supervisor or semantic selector. It verifies durable results when Codex
+already published them, or may perform only narrowly authorized publication
+mechanics when Codex lacks GitHub capability; it must not claim `AI_REVIEW` or
+other publication before that durable GitHub state exists. Worker possession of
+GitHub credentials is not an architectural requirement. Alternating `:00`
 runner/worker and `:30` supervisor opportunities are initial operational
 configuration, not governance semantics. If a valid evaluation completes and no
 work is authorized, return exactly `NO_OP`. If evaluation cannot complete, report

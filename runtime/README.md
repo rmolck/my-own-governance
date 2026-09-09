@@ -99,11 +99,16 @@ portable contracts in `docs/AUTONOMY.md` and `docs/EXECUTION.md`.
 
 ## GOV-009 phase hooks and local evidence
 
-`GOVERNANCE_REFRESH_COMMAND` and `GOVERNANCE_FINALIZER_COMMAND` configure the
-mechanical fresh-state boundary and finalizer pre-pass. A pre-pass JSON outcome of
+`GOVERNANCE_REFRESH_COMMAND`, `GOVERNANCE_FINALIZER_COMMAND`, and
+`GOVERNANCE_HOST_POST_WORKER_COMMAND` configure the mechanical fresh-state
+boundary, finalizer pre-pass, and host post-worker boundary. A pre-pass JSON outcome of
 `finalized` requires another successful refresh before the runner invokes Codex
 once; failure or missing refresh fails closed. Worker completion does not invoke a
-finalizer post-pass. These commands must implement the versioned
+finalizer post-pass. After Codex returns, the host command runs once to inspect and
+reconcile actual results and may support narrowly authorized publication when the
+worker lacks GitHub capability. A nonzero host result fails the wake rather than
+reporting false valid completion. The hook is an interface boundary, not a full
+privileged publisher, supervisor, or semantic selector. These commands must implement the versioned
 [`FINALIZER`](../agents/FINALIZER.md) and remote-freshness contracts; the runner
 does not infer semantic eligibility. `GOVERNANCE_EVIDENCE_FILE` defaults to
 `.git/governance-runtime/runs.jsonl`, a mode-0600 append-only local JSONL stream.

@@ -13,3 +13,7 @@ failed outcome without changing checkpoint state. Never enable auto-merge, merge
 Gate `HUMAN`, select subsequent work, or invoke the worker. After successful
 finalization, the runner refreshes and may offer one worker invocation; that is a
 separate principal unit selected from freshly reconciled durable state.
+
+The host post-worker phase is not a second finalizer pass. It mechanically
+inspects/reconciles the worker result and, when narrowly authorized, may publish
+it; it never infers or supplies supervisor approval.

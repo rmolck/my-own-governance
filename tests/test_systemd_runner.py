@@ -71,7 +71,7 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertEqual(summary["classification"], "valid_completion")
         self.assertGreaterEqual(summary["runner_wall_seconds"], 0)
         self.assertEqual([phase["phase"] for phase in summary["phases"]],
-                         ["refresh_pre", "finalizer_pre"])
+                         ["refresh_pre", "finalizer_pre", "host_post_worker"])
         evidence = self.repository / ".git" / "governance-runtime" / "runs.jsonl"
         self.assertEqual(len(evidence.read_text().splitlines()), 1)
 
@@ -89,7 +89,8 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertEqual(order.read_text().splitlines(),
                          ["refresh", "finalizer", "refresh"])
         self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
-                         ["refresh_pre", "finalizer_pre", "refresh_after_finalization"])
+                         ["refresh_pre", "finalizer_pre", "refresh_after_finalization",
+                          "host_post_worker"])
 
     def test_worker_completion_never_triggers_finalizer_post_pass(self):
         count = self.directory / "finalizer-count"
@@ -99,7 +100,35 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(count.read_text().splitlines(), ["x"])
         self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
-                         ["refresh_pre", "finalizer_pre"])
+                         ["refresh_pre", "finalizer_pre", "host_post_worker"])
+
+    def test_host_post_worker_runs_after_worker(self):
+        observation = self.directory / "host-observation"
+        host = self.phase_script(
+            "host-post-worker",
+            f'test -f "{self.directory / "counter"}"\n'
+            f'printf reconciled > "{observation}"\n',
+        )
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_HOST_POST_WORKER_COMMAND": str(host),
+        })
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(observation.read_text(), "reconciled")
+        self.assertEqual(self.summary(result)["phases"][-1], {
+            "phase": "host_post_worker", "exit_status": 0,
+            "classification": "completed",
+        })
+
+    def test_host_post_worker_failure_overrides_worker_success(self):
+        host = self.phase_script("host-post-worker", "exit 9\n")
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_HOST_POST_WORKER_COMMAND": str(host),
+        })
+        self.assertEqual(result.returncode, 70)
+        summary = self.summary(result)
+        self.assertEqual(summary["classification"], "runner_internal_failure")
+        self.assertEqual(summary["technical_error"], "host_post_worker failed")
+        self.assertEqual(summary["phases"][-1]["classification"], "failed")
 
     def phase_script(self, name, body):
         script = self.directory / name

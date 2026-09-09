@@ -97,6 +97,7 @@ def run() -> int:
         )).expanduser().resolve()
         refresh_command = os.environ.get("GOVERNANCE_REFRESH_COMMAND")
         finalizer_command = os.environ.get("GOVERNANCE_FINALIZER_COMMAND")
+        host_post_worker_command = os.environ.get("GOVERNANCE_HOST_POST_WORKER_COMMAND")
         python = executable(os.environ.get("GOVERNANCE_PYTHON", sys.executable))
         if not repository.is_dir() or not (repository / ".git").exists():
             raise ValueError("repository is not a usable Git checkout/worktree")
@@ -191,6 +192,23 @@ def run() -> int:
                 technical_error = "adapter did not emit its expected JSON summary"
                 codex_wall_seconds = None
 
+            host_post_worker_failed = False
+            if host_post_worker_command:
+                host_post_worker = run_command(host_post_worker_command, repository)
+                host_post_worker_failed = host_post_worker.returncode != 0
+                phases.append({
+                    "phase": "host_post_worker",
+                    "exit_status": host_post_worker.returncode,
+                    "classification": (
+                        "completed" if not host_post_worker_failed else "failed"
+                    ),
+                })
+            else:
+                phases.append({
+                    "phase": "host_post_worker",
+                    "classification": "not_configured",
+                })
+
             classifications = {
                 VALID: "valid_completion",
                 INVALID: "interrupted_invalid",
@@ -201,6 +219,10 @@ def run() -> int:
                 completed.returncode, "interrupted_invalid"
             )
             result = completed.returncode if completed.returncode in classifications else INVALID
+            if host_post_worker_failed:
+                classification = "runner_internal_failure"
+                result = EXECUTION_FAILURE
+                technical_error = "host_post_worker failed"
             summary = emit(
                 repository,
                 lock_acquired=True,
