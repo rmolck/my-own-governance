@@ -116,6 +116,13 @@ It classifies clean state, expected modifications, unexpected tracked modificati
 unexpected untracked paths, and branch/ref mismatch. Only clean or wholly expected
 changes are publishable; this validates mechanics, never semantic correctness.
 
+After refresh and the finalizer pre-pass, the host executes a bounded mechanical
+recovery/reconciliation boundary before launching the worker. Its only decisions are
+to invoke the worker, reconcile already-existing publication, or record that no
+worker action remains. Existing durable `AI_REVIEW` and legitimate publication skip
+the worker. A launch error, nonzero exit, malformed response, unknown action, or
+ambiguous identity is an execution failure and prevents worker launch.
+
 Host subprocess interfaces are structured argv arrays, run without a shell, and use
 explicit UTF-8 text decoding. Output is bounded and private by default. Launch failure
 (no child exists) and child nonzero exit are distinct from worker, publication, and

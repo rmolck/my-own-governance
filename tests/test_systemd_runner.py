@@ -71,7 +71,8 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertEqual(summary["classification"], "valid_completion")
         self.assertGreaterEqual(summary["runner_wall_seconds"], 0)
         self.assertEqual([phase["phase"] for phase in summary["phases"]],
-                         ["refresh_pre", "finalizer_pre", "host_post_worker"])
+                         ["refresh_pre", "finalizer_pre", "recovery_pre_worker",
+                          "host_post_worker"])
         evidence = self.repository / ".git" / "governance-runtime" / "runs.jsonl"
         self.assertEqual(len(evidence.read_text().splitlines()), 1)
 
@@ -90,7 +91,7 @@ class SystemdRunnerTest(unittest.TestCase):
                          ["refresh", "finalizer", "refresh"])
         self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
                          ["refresh_pre", "finalizer_pre", "refresh_after_finalization",
-                          "host_post_worker"])
+                          "recovery_pre_worker", "host_post_worker"])
 
     def test_worker_completion_never_triggers_finalizer_post_pass(self):
         count = self.directory / "finalizer-count"
@@ -100,7 +101,62 @@ class SystemdRunnerTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(count.read_text().splitlines(), ["x"])
         self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
-                         ["refresh_pre", "finalizer_pre", "host_post_worker"])
+                         ["refresh_pre", "finalizer_pre", "recovery_pre_worker",
+                          "host_post_worker"])
+
+    def recovery_script(self, action=None, exit_status=0, output=None, name="recovery"):
+        if output is None:
+            output = json.dumps({"action": action})
+        return self.phase_script(
+            name, f"printf '%s\\n' {json.dumps(output)}\nexit {exit_status}\n",
+        )
+
+    def test_durable_ai_review_recovery_skips_worker(self):
+        recovery = self.recovery_script("reconciled_no_action")
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
+        })
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse((self.directory / "counter").exists())
+        summary = self.summary(result)
+        self.assertEqual(summary["classification"], "reconciled_no_action")
+        self.assertEqual(summary["phases"][-1]["action"], "reconciled_no_action")
+
+    def test_existing_publication_is_reconciled_without_worker(self):
+        recovery = self.recovery_script("reconcile_existing_publication")
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
+        })
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse((self.directory / "counter").exists())
+        self.assertEqual(self.summary(result)["phases"][-1]["action"],
+                         "reconcile_existing_publication")
+
+    def test_recovery_allows_genuinely_new_work_once(self):
+        recovery = self.recovery_script("invoke_worker")
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
+        })
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual((self.directory / "counter").read_text(), "x")
+
+    def test_recovery_failure_or_malformed_result_fails_closed(self):
+        cases = (
+            self.recovery_script(exit_status=9, output="failed", name="recovery-exit"),
+            self.recovery_script(output="not-json", name="recovery-malformed"),
+            self.recovery_script(output=json.dumps({"action": "unknown"}),
+                                 name="recovery-unknown"),
+        )
+        for recovery in cases:
+            with self.subTest(recovery=recovery):
+                (self.directory / "counter").unlink(missing_ok=True)
+                result = self.invoke(env=self.env | {
+                    "GOVERNANCE_RECOVERY_ARGV": json.dumps([str(recovery)]),
+                })
+                self.assertEqual(result.returncode, 70)
+                self.assertFalse((self.directory / "counter").exists())
+                self.assertEqual(self.summary(result)["classification"],
+                                 "recovery_failure")
 
     def test_host_post_worker_runs_after_worker(self):
         observation = self.directory / "host-observation"

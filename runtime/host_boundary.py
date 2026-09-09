@@ -159,9 +159,9 @@ def recovery_action(*, durable_state: str | None, branch_exists: bool,
     if durable_state == "AI_REVIEW" and pr_exists:
         return "reconciled_no_action"
     if pr_exists:
-        return "reconcile_existing_pr"
+        return "reconcile_existing_publication"
     if branch_exists:
-        return "reconcile_existing_branch"
+        return "reconcile_existing_publication"
     if worker_result_complete:
         return "validate_and_publish"
     return "invoke_worker"

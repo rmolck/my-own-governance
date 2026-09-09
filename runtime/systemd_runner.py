@@ -93,6 +93,7 @@ def run() -> int:
         phase_values = {
             "refresh_pre": os.environ.get("GOVERNANCE_REFRESH_ARGV"),
             "finalizer_pre": os.environ.get("GOVERNANCE_FINALIZER_ARGV"),
+            "recovery_pre_worker": os.environ.get("GOVERNANCE_RECOVERY_ARGV"),
             "host_post_worker": os.environ.get("GOVERNANCE_HOST_POST_WORKER_ARGV"),
         }
         phase_argv = {
@@ -168,6 +169,53 @@ def run() -> int:
                         )
                         append_evidence(evidence_file, summary)
                         return EXECUTION_FAILURE
+
+            recovery = phase_argv["recovery_pre_worker"]
+            if recovery:
+                completed_recovery = run_process(recovery, repository)
+                recovery_phase: dict[str, object] = {
+                    "phase": "recovery_pre_worker",
+                    "exit_status": completed_recovery.exit_status,
+                    "classification": completed_recovery.classification,
+                }
+                if completed_recovery.classification == "completed":
+                    try:
+                        recovery_payload = json.loads(completed_recovery.stdout)
+                        recovery_action = recovery_payload.get("action")
+                    except (json.JSONDecodeError, AttributeError):
+                        recovery_action = None
+                    if recovery_action not in {
+                        "invoke_worker", "reconciled_no_action",
+                        "reconcile_existing_publication",
+                    }:
+                        recovery_phase["classification"] = "invalid_result"
+                    else:
+                        recovery_phase["action"] = recovery_action
+                phases.append(recovery_phase)
+                if recovery_phase["classification"] != "completed":
+                    summary = emit(
+                        repository, lock_acquired=True,
+                        classification="recovery_failure", phases=phases,
+                        runner_started_at=runner_started_at,
+                        runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                        technical_error="pre-worker recovery failed closed",
+                    )
+                    append_evidence(evidence_file, summary)
+                    return EXECUTION_FAILURE
+                if recovery_action != "invoke_worker":
+                    summary = emit(
+                        repository, lock_acquired=True,
+                        classification="reconciled_no_action", phases=phases,
+                        runner_started_at=runner_started_at,
+                        runner_wall_seconds=round(time.monotonic() - runner_started, 6),
+                    )
+                    append_evidence(evidence_file, summary)
+                    return VALID
+            else:
+                phases.append({
+                    "phase": "recovery_pre_worker",
+                    "classification": "not_configured",
+                })
 
             command = [python, str(adapter), str(repository)]
             codex = os.environ.get("GOVERNANCE_CODEX_EXECUTABLE")

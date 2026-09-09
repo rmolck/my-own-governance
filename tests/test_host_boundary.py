@@ -74,10 +74,10 @@ class HostBoundaryTest(unittest.TestCase):
                          "reconciled_no_action")
         self.assertEqual(recovery_action(durable_state="WORKING", branch_exists=True,
                                          pr_exists=True, worker_result_complete=False),
-                         "reconcile_existing_pr")
+                         "reconcile_existing_publication")
         self.assertEqual(recovery_action(durable_state="WORKING", branch_exists=True,
                                          pr_exists=False, worker_result_complete=False),
-                         "reconcile_existing_branch")
+                         "reconcile_existing_publication")
 
     def test_process_boundary_has_no_shell_and_distinguishes_failures(self):
         marker = self.repo / "marker"

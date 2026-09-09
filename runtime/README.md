@@ -99,12 +99,18 @@ portable contracts in `docs/AUTONOMY.md` and `docs/EXECUTION.md`.
 
 ## Recovery-safe phase hooks and local evidence
 
-`GOVERNANCE_REFRESH_ARGV`, `GOVERNANCE_FINALIZER_ARGV`, and
-`GOVERNANCE_HOST_POST_WORKER_ARGV` are JSON arrays of argv strings and configure the mechanical fresh-state
-boundary, finalizer pre-pass, and host post-worker boundary. A pre-pass JSON outcome of
+`GOVERNANCE_REFRESH_ARGV`, `GOVERNANCE_FINALIZER_ARGV`,
+`GOVERNANCE_RECOVERY_ARGV`, and `GOVERNANCE_HOST_POST_WORKER_ARGV` are JSON arrays of argv strings and configure the mechanical fresh-state
+boundary, finalizer pre-pass, pre-worker recovery gate, and host post-worker
+boundary. A pre-pass JSON outcome of
 `finalized` requires another successful refresh before the runner invokes Codex
-once; failure or missing refresh fails closed. Worker completion does not invoke a
-finalizer post-pass. After Codex returns, the host command runs once to inspect and
+once; failure or missing refresh fails closed. The recovery command runs after fresh-state/finalizer reconciliation and before the
+adapter. It emits exactly one JSON object whose `action` is `invoke_worker`,
+`reconciled_no_action`, or `reconcile_existing_publication`. The latter two skip
+Codex successfully; launch, nonzero, malformed, or unknown results fail closed and
+skip Codex. This lets a provider integration report already-durable branch/PR state
+without transferring semantic selection to the runner. Worker completion does not
+invoke a finalizer post-pass. After Codex returns, the host command runs once to inspect and
 reconcile actual results and may support narrowly authorized publication when the
 worker lacks GitHub capability. A nonzero host result fails the wake rather than
 reporting false valid completion. The hook is an interface boundary, not a full
