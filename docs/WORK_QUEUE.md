@@ -14,4 +14,6 @@ Operational coordination for this repository only. Requirements and governance r
 | GOV-007 | Configure and reproducibly validate the AI SUPERVISOR contract. | GOV-001..GOV-006 `DONE`; [`AUTONOMY.md`](AUTONOMY.md); [`SUPERVISOR_VALIDATION.md`](SUPERVISOR_VALIDATION.md). | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on HEAD `0ccf358abbf564a432394b165671a6caca53bf1f`. |
 | GOV-008 | Execute end-to-end acceptance tests for the autonomous governance protocol. | GOV-001..GOV-007 `DONE`; [`ACCEPTANCE_VALIDATION.md`](ACCEPTANCE_VALIDATION.md). | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on substantive HEAD `463c3b50277987c0adfccfde276ea68d0b08297b`; HUMAN OWNER authorized merge of PR #12. |
 
+| GOV-009 | Define actor ownership, versioned agent instructions, and runtime timing evidence ([issue #13](https://github.com/rmolck/my-own-governance/issues/13)). | GOV-001..GOV-008 `DONE`; explicit HUMAN OWNER authorization in issue #13. | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on substantive HEAD `41a7834f7690320a5e3eb9d8aadd76472716c818`. |
+
 Future work enters only with a concise objective, objective dependencies, one normative state, one gate, active work identity when present, and the last relevant durable result. Detailed requirements must be linked, not copied here.

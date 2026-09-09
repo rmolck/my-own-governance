@@ -1,6 +1,6 @@
 # Autonomous work contract
 
-This is the normative, scheduler/runner-agnostic contract for HUMAN OWNER, CODEX WORKER, AI SUPERVISOR, and GITHUB. It defines authority and durable coordination; it does not install or authorize automation and does not depend on any particular execution product, user interface, or scheduler.
+This is the normative, scheduler/runner-agnostic contract for HUMAN OWNER, AI ORCHESTRATOR, CODEX WORKER, AI SUPERVISOR, FINALIZER, and GITHUB. It defines authority and durable coordination; it does not install or authorize automation and does not depend on any particular execution product, user interface, or scheduler.
 
 ## Authority of durable remote state
 
@@ -12,13 +12,19 @@ An identified legitimate active branch/PR may take precedence for continuity and
 
 ## Roles
 
+Operations belong to the least-semantic actor capable of performing them safely.
+
+### AI ORCHESTRATOR
+
+ChatGPT represents AI ORCHESTRATOR and AI SUPERVISOR as two logical roles by default. The orchestrator refreshes durable state, reconciles contradictions, selects or frames authorized work, and owns routine coordination and metadata for an existing GitHub PR when capable. Capability does not expand authority. Failure to change external GitHub metadata is reported as an access/capability failure and must never be disguised by a commit claiming that the external change occurred.
+
 ### HUMAN OWNER
 
 Owns product, observable behavior, significant architecture, data model, compatibility, security, persistence, data-loss risk, credentials, production, irreversible operations, external contracts, business rules, relevant UX, other material decisions, and every Gate `HUMAN` merge. For Gate `AI`, merge authorization is delegated only under the approval and finalization rules below. Changes to authority, merge policy, or security remain human-reserved; GOV-006 is authorized by the owner task that established it. The owner is not required for local, equivalent, easily reversible decisions.
 
 ### CODEX WORKER
 
-May execute authorized checkpoints, implement, test, repair in-scope failures, maintain affected documentation, work on branches, commit, push a branch, open/update PRs, respond to `AI_REWORK`, and update the queue. It may not self-approve, cross a human gate, merge or push directly to `main`, force-push, rewrite history, delete branches, create releases/tags, change repository policy, act in production, modify real data, perform an unauthorized destructive/irreversible operation, or persist secrets.
+May execute authorized checkpoints, implement, test, repair in-scope failures, maintain implementation-linked documentation, work on branches, commit, push a branch, create the initial PR when delivery requires it, respond to `AI_REWORK`, and update the queue. Its preferred ownership is mutation and delivery of the Git tree. After a PR exists, routine GitHub coordination metadata belongs to the orchestrator/supervisor when that actor is capable. It may not self-approve, cross a human gate, merge or push directly to `main`, force-push, rewrite history, delete branches, create releases/tags, change repository policy, act in production, modify real data, perform an unauthorized destructive/irreversible operation, or persist secrets.
 
 ### AI SUPERVISOR
 
@@ -30,7 +36,7 @@ Reviews scope, correctness, diff, checks, documentation, architecture, evidence,
 
 A top-level PR comment is sufficient; the protocol does not depend on formal GitHub review approval. The supervisor decides and authorizes but neither needs to execute the merge nor writes directly to `main`. It does not repeat a decision for the same HEAD unless a relevant change invalidates it. Correctable, in-scope problems require `AI_REWORK`, not human escalation. For Gate `AI`, approval of the relevant PR HEAD means semantic completion and delegates merge authorization subject to the mechanical safeguards below. It never delegates a Gate `HUMAN` merge or a human-reserved decision.
 
-The supervisor reviews one already-selected checkpoint/PR; it is not a worker,
+While acting as supervisor it reviews one already-selected checkpoint/PR; that logical role is not a worker,
 scheduler, heartbeat, or finalizer and does not implement fixes, select or start
 another checkpoint, create requirements, or manufacture evidence. It must
 establish the repository, checkpoint, branch, PR, gate/state, and exact HEAD;
@@ -52,6 +58,10 @@ preserves approval without another semantic review.
 ### GITHUB
 
 Provides durable persistence and traceability through branches, commits, PRs, comments/reviews, and checks. GITHUB is not an intelligent agent: it records evidence and coordination but neither decides what is authorized nor grants or expands the authority of HUMAN OWNER, CODEX WORKER, or AI SUPERVISOR.
+
+### FINALIZER
+
+The finalizer is a distinct mechanical component and may be completely deterministic without an LLM. It verifies existing durable authorization and may perform only the allowlisted closure and expected-HEAD-protected Gate-`AI` merge defined below. It has no semantic judgment, approval, repair, or work-selection authority. ChatGPT may temporarily execute these mechanics without combining logical roles or expanding authority.
 
 ## Portable execution boundaries
 
@@ -122,7 +132,8 @@ When the approved HEAD still publishes the checkpoint as `AI_REVIEW`, authorizat
 
 ## Future heartbeat selection
 
-After refreshing durable GitHub state and reconciling an active PR, one invocation processes at most one checkpoint/PR in this order:
+After refreshing durable GitHub state and reconciling an active PR, one worker
+invocation processes at most one checkpoint/PR in this order:
 
 1. `AI_REWORK`.
 2. An approved Gate-`AI` PR eligible for mechanical closure and merge finalization.
@@ -133,7 +144,27 @@ After refreshing durable GitHub state and reconciling an active PR, one invocati
 7. `HUMAN_REQUIRED`: do not cross it; only clearly permitted independent work may proceed.
 8. `BLOCKED`: revalidate its cause; if it persists, `NO_OP`.
 
-Finalization consumes the invocation's single checkpoint/PR allowance and never selects another checkpoint. If a valid evaluation completes and no work is authorized, return exactly `NO_OP`. If evaluation cannot complete, report a runtime/execution failure instead. Never invent work and avoid unnecessary parallel work.
+The finalizer never selects another checkpoint. A finalized PR and one later
+worker transition may share a wake only after the runner refreshes durable state;
+they remain separate principal units and the worker still processes at most one
+checkpoint/PR.
+
+The reference runtime sequence is: acquire lock, host refresh/reconcile, finalizer
+pre-pass, finalize eligible approved work, host refresh/reconcile after any
+finalization, invoke the worker once if the refreshed contract authorizes it,
+run a mechanical host post-worker inspect/reconcile/publish phase, record, and
+release the lock. Codex completion never triggers a finalizer post-pass: a new
+approval cannot exist until the supervisor's later opportunity. The host phase is
+not a supervisor or semantic selector. It verifies durable results when Codex
+already published them, or may perform only narrowly authorized publication
+mechanics when Codex lacks GitHub capability; it must not claim `AI_REVIEW` or
+other publication before that durable GitHub state exists. Worker possession of
+GitHub credentials is not an architectural requirement. Alternating `:00`
+runner/worker and `:30` supervisor opportunities are initial operational
+configuration, not governance semantics. If a valid evaluation completes and no
+work is authorized, return exactly `NO_OP`. If evaluation cannot complete, report
+a runtime/execution failure instead. Never invent work and avoid unnecessary
+parallel work.
 
 ## Git and safety policy
 

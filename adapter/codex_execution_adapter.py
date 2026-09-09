@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 import uuid
 
 
@@ -18,10 +19,8 @@ INVALID = 65
 EXECUTION_FAILURE = 70
 INTERRUPTED = 130
 
-INSTRUCTION = """Perform exactly one autonomous governance invocation in the repository supplied as your working directory.
-Read the repository's current versioned instructions and governance documents, refresh durable remote state when required, and apply their priority and semantics.
-Process at most one checkpoint/PR. Return exactly NO_OP when a valid evaluation finds no authorized transition.
-Do not invent work, merge, or write directly to main.
+INSTRUCTION = """Execute one CODEX WORKER invocation in the supplied repository.
+Read agents/CODEX_WORKER.md, the applicable AGENTS.md files, and the fresh durable state they require. Those versioned sources are authoritative.
 """
 
 
@@ -61,6 +60,7 @@ def run(argv: list[str]) -> int:
     repository = args.repository.expanduser().resolve()
     output_dir = (args.output_dir or repository / ".git" / "codex-adapter").resolve()
     started_at = timestamp()
+    started_monotonic = time.monotonic()
     summary: dict[str, object] = {
         "schema_version": 1,
         "invocation_id": invocation_id,
@@ -78,7 +78,8 @@ def run(argv: list[str]) -> int:
 
     if not repository.is_dir() or not (repository / ".git").exists():
         summary["technical_error"] = "repository is not a Git worktree"
-        summary["ended_at"] = timestamp()
+        summary["finished_at"] = timestamp()
+        summary["codex_wall_seconds"] = None
         emit(summary)
         return EXECUTION_FAILURE
 
@@ -94,6 +95,7 @@ def run(argv: list[str]) -> int:
             stderr=subprocess.PIPE,
         )
         summary["codex_started"] = True
+        codex_started_monotonic = time.monotonic()
         try:
             stdout, stderr = process.communicate(INSTRUCTION.encode("utf-8"))
         except KeyboardInterrupt:
@@ -112,12 +114,14 @@ def run(argv: list[str]) -> int:
                 stderr_path=str(stderr_path),
                 technical_error="adapter interrupted",
             )
-            summary["ended_at"] = timestamp()
+            summary["finished_at"] = timestamp()
+            summary["codex_wall_seconds"] = round(time.monotonic() - codex_started_monotonic, 6)
             emit(summary)
             return INTERRUPTED
     except (OSError, ValueError) as error:
         summary["technical_error"] = f"could not execute Codex CLI: {error}"
-        summary["ended_at"] = timestamp()
+        summary["finished_at"] = timestamp()
+        summary["codex_wall_seconds"] = None
         emit(summary)
         return EXECUTION_FAILURE
 
@@ -160,7 +164,9 @@ def run(argv: list[str]) -> int:
             )
             result = INVALID
 
-    summary["ended_at"] = timestamp()
+    summary["finished_at"] = timestamp()
+    summary["codex_wall_seconds"] = round(time.monotonic() - codex_started_monotonic, 6)
+    summary["adapter_wall_seconds"] = round(time.monotonic() - started_monotonic, 6)
     emit(summary)
     return result
 

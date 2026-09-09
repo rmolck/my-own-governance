@@ -8,13 +8,17 @@ One autonomous invocation, or heartbeat, asks: **does current durable state auth
 
 The governance-aware worker performs semantic evaluation and work selection according to `AUTONOMY.md`. A valid evaluation that finds no authorized transition returns `NO_OP`. It must not invent work merely to make an invocation productive.
 
-Each invocation is limited to:
+Each worker invocation is limited to:
 
 - at most one checkpoint;
 - at most one active PR; and
 - at most one principal semantic transition or one approved operational finalization.
 
-Incidental mechanical steps needed to complete that unit—including allowlisted approval closure—do not authorize another checkpoint or an unrelated transition.
+Incidental mechanical steps needed to complete that worker unit do not authorize
+another worker checkpoint or an unrelated transition. A runtime wake may first
+finalize at most one already-approved PR, then refresh and offer one worker
+invocation; finalization is a distinct principal unit rather than worker-selected
+work.
 
 ## Required resolved inputs
 
@@ -74,7 +78,23 @@ The scheduler/runtime:
 - captures output, errors, and execution status; and
 - terminates.
 
-It does not interpret the queue semantically or select priorities beyond invoking the governance-aware worker. Time remaining after an invocation does not authorize another checkpoint.
+It does not interpret the queue semantically or select priorities beyond invoking
+the governance-aware worker. After the allowlisted pre-pass cycle, time remaining
+does not authorize a second worker invocation or checkpoint.
+
+### Mechanical host boundary
+
+The host refreshes and reconciles before finalization, repeats that boundary after
+a successful finalization, and inspects/reconciles the result after the worker
+returns. The post-worker host phase is not a finalizer, supervisor, or semantic
+selector. When Codex already had Git/GitHub capability, it verifies the resulting
+durable branch/PR state. When Codex lacked publication capability, it may perform
+only narrowly authorized mechanics needed to publish the worker result, with fresh
+state and validation safeguards. It must preserve missing publication as missing,
+not assert `AI_REVIEW` or other GitHub state prematurely. The portable architecture
+does not require Codex to hold GitHub credentials. Full privileged publication,
+recovery/idempotency, path validation, and credential design remain deployment or
+follow-on architecture concerns.
 
 ### Review and finalization boundary
 
@@ -149,3 +169,11 @@ An execution adapter, runner, scheduler, or runtime must not:
 ## Portability
 
 The contract can be implemented by combinations such as Codex CLI with systemd, another agent CLI with cron, GitHub Actions, Codex Automations, or future runtimes. These are informative examples only. No named agent, scheduler, operating system, lock primitive, or hosting provider is a normative dependency.
+
+## Reference phase sequence and timing evidence
+
+A reference wake follows `lock -> host fresh refresh/reconcile -> finalizer pre-pass -> if finalized, host fresh refresh/reconcile -> worker once if authorized -> host post-worker inspect/reconcile/publish -> record -> unlock`. The finalizer consumes fresh durable state and acts only on a mechanically eligible, approved Gate-`AI` PR. It neither selects nor calls the worker. After a successful finalization, the runner must refresh before offering Codex one evaluation of newly eligible work. Codex completion leads to the distinct mechanical host boundary and never triggers a finalizer post-pass because no later supervisor approval can yet exist. The finalizer is deterministic and allowlisted, while the runner and host provide no semantic selector.
+
+The runtime measures externally with a monotonic clock around `codex exec` and, where feasible, the complete locked iteration. Append-only structured evidence records UTC start/finish identity, `codex_wall_seconds`, runner wall seconds, exit/classification/outcome, lock contention, checkpoint/branch/PR and relevant before/after HEAD when resolved. Unknown fields remain null rather than invented. Raw per-run evidence is private local runtime data by default; public repository evidence is sanitized and aggregated periodically or in bounded batches, never committed once per wake.
+
+Cadence is runtime configuration. The initial alternating runner/worker opportunity at `:00` and supervisor opportunity at `:30` is only a reference. Changes must use enough observed samples and consider median, p90, p95, maximum, failures, outcomes, and lock contention with operational margin—not mean alone.

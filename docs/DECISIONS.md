@@ -16,13 +16,17 @@
 
 **Consequences:** New-work selection requires a fresh published-baseline read. Legitimate active branch/PR work is reconciled and preserved rather than reconstructed or discarded.
 
-## D-003 — Separate human, worker, and supervisor authority *(amended by D-010)*
+## D-003 — Separate human, worker, and supervisor authority *(amended by D-010 and D-013)*
 
 **Decision:** Separate HUMAN OWNER, CODEX WORKER, and AI SUPERVISOR roles. Capability does not imply authorization.
 
 **Rationale:** Implementation, independent review, and material ownership require distinct authority.
 
 **Consequences:** The worker cannot self-approve or cross human gates. The supervisor reviews but neither executes merges nor writes to `main`. The owner retains material decisions and merge authorization unless explicitly delegated; D-010 records the bounded Gate-`AI` delegation.
+
+**Amendment:** D-013 preserves separation of logical authority while making AI
+ORCHESTRATOR and AI SUPERVISOR roles of ChatGPT by default. Distinct logical roles
+need not imply distinct products or identities.
 
 ## D-004 — No auto-merge initially *(superseded by D-010; retained for history)*
 
@@ -88,7 +92,7 @@ portable behavior in [`EXECUTION.md`](EXECUTION.md).
 
 **Consequences:** Later substantive changes or a later `AI_REWORK` or `HUMAN_REQUIRED` invalidate approval. When the approved HEAD still records `AI_REVIEW`, authorization exists but merge is not executable until a closure commit materializes `DONE`. That commit preserves derived authorization without renewed review only when it starts exactly at the approved HEAD and its entire diff is allowlisted to `docs/WORK_QUEUE.md` closure metadata; code, tests, requirements, normative decisions, or any other file invalidate it. The finalizer merges exactly the verified derived HEAD using movement protection when available, after verifying PR identity and legitimacy, mergeability, required/configured checks, gate and human-reserved boundaries, and non-destructive operation. Closure and merge are one operational finalization, not a new decision or heartbeat. A failed operational precondition does not automatically mean `BLOCKED`. Approval never enables generic GitHub auto-merge.
 
-## D-011 — Supervisor review is HEAD-bound and evidence-driven
+## D-011 — Supervisor review is HEAD-bound and evidence-driven *(amended by D-013)*
 
 **Decision:** The AI SUPERVISOR reviews one already-selected, review-ready PR
 from observable repository and GitHub evidence. It re-confirms the exact PR HEAD
@@ -107,6 +111,11 @@ failure publishes no semantic decision. GOV-006's strictly allowlisted closure
 may preserve approval without a second semantic review, but the finalizer cannot
 make or repair the supervisor's judgment.
 
+**Amendment:** The prohibition on selecting work and GitHub coordination applies
+to the supervisor role while deciding a review, not to the same agent acting in
+the separate AI ORCHESTRATOR role. D-013 supersedes any reading that forbids that
+orchestrator from framing work or maintaining routine PR metadata.
+
 ## D-012 — Acceptance validation composes test-only protocol oracles
 
 **Decision:** Validate the end-to-end governance protocol with a deterministic,
@@ -123,3 +132,23 @@ live model review, GitHub operation, or merge.
 assertion. The supervisor closure oracle now accepts the same optional,
 strictly-derived approval-result metadata that the heartbeat/finalizer oracle
 and `AUTONOMY.md` already accepted; all other closure metadata remains invalid.
+
+## D-013 — Least-semantic actor ownership and empirical runtime cadence
+
+**Decision:** ChatGPT represents AI ORCHESTRATOR and AI SUPERVISOR logical roles by default; CODEX WORKER preferentially mutates and delivers the Git tree; and an allowlisted FINALIZER plus a minimal RUNNER perform only mechanics. Stable role instructions are versioned under `agents/`. Runtime measures Codex and full-run wall time externally in append-only local evidence. Scheduler tuning uses observed median, p90/p95, maxima, failures, outcomes, and lock contention plus margin.
+
+**Rationale:** Assigning each operation to the least-semantic capable actor avoids using commits to simulate unavailable GitHub metadata, permits deterministic finalization, reduces prompt drift, and makes cadence changes evidence-driven.
+
+**Consequences:** The reference order is fresh refresh, finalizer pre-pass, a
+second host refresh/reconciliation after successful finalization, one worker
+invocation when the refreshed contract authorizes it, and a mechanical host
+post-worker inspect/reconcile/publish boundary. There is no finalizer post-pass
+after the worker. The host can verify an already-published result or perform only
+narrowly authorized publication mechanics when Codex lacks GitHub capability;
+worker-held GitHub credentials are not an invariant. A finalized PR and a later worker transition are
+separate principal units that may share one wake; the finalizer itself never
+selects or invokes work. This owner clarification supersedes D-013's original
+wording that finalization consumed the whole wake. The initial `:00` worker and
+`:30` supervisor opportunities are operational configuration only. Exhaustive
+per-run telemetry is local and append-only by default; repository evidence is
+periodically aggregated, never committed once per execution.
