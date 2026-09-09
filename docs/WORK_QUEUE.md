@@ -16,4 +16,6 @@ Operational coordination for this repository only. Requirements and governance r
 
 | GOV-009 | Define actor ownership, versioned agent instructions, and runtime timing evidence ([issue #13](https://github.com/rmolck/my-own-governance/issues/13)). | GOV-001..GOV-008 `DONE`; explicit HUMAN OWNER authorization in issue #13. | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on substantive HEAD `41a7834f7690320a5e3eb9d8aadd76472716c818`. |
 
+| GOV-010 | Harden runtime recovery, Git-state validation, and privilege boundaries ([issue #15](https://github.com/rmolck/my-own-governance/issues/15)). | GOV-001..GOV-009 `DONE`; explicit HUMAN OWNER authorization in issue #15. | WORKING | AI | `gov-010-runtime-recovery` / pending publication | Implementation and validation in progress. |
+
 Future work enters only with a concise objective, objective dependencies, one normative state, one gate, active work identity when present, and the last relevant durable result. Detailed requirements must be linked, not copied here.

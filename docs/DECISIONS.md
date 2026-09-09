@@ -152,3 +152,28 @@ wording that finalization consumed the whole wake. The initial `:00` worker and
 `:30` supervisor opportunities are operational configuration only. Exhaustive
 per-run telemetry is local and append-only by default; repository evidence is
 periodically aggregated, never committed once per execution.
+
+## D-014 — Worker-capable publication with a validated host fallback
+
+**Decision:** Use Model A, worker-capable publication, as the reference default. A
+capable CODEX WORKER may edit, commit, push, and create or update the initial PR;
+the post-worker host freshly reconciles durable identity and validates the real Git
+state before verifying or narrowly completing missing mechanics. Model B,
+host-owned publication, is a permitted deployment fallback when the host implements
+the same fail-closed branch/ref and tracked/untracked path validation. Credentials
+belong only to the publishing component and are never a worker invariant.
+
+**Rationale:** Model A preserves the established worker delivery contract and works
+across local Codex CLI and hosted environments without imposing a provider-specific
+publisher. Model B can reduce the worker's credential and `.git` mutation surface,
+but increases host privilege, recovery logic, provider coupling, and implementation
+complexity. Fresh durable GitHub state plus deterministic validation makes Model A
+recoverable without pretending that local evidence is authoritative.
+
+**Consequences:** A legitimate durable branch/PR always wins over a derived local
+name. Repeated or interrupted wakes reconcile already-published work and durable
+`AI_REVIEW` instead of invoking or publishing again. Host-owned publication must
+fail closed on unexpected tracked or untracked paths, detached/mismatched refs, or
+ambiguous identity; it cannot infer semantic correctness or become a selector,
+supervisor, or post-worker finalizer. The reference exposes provider-neutral host
+primitives, while the full deterministic Gate-AI finalizer remains GOV-011 scope.

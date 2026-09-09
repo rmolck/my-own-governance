@@ -81,8 +81,8 @@ class SystemdRunnerTest(unittest.TestCase):
         finalizer = self.phase_script(
             "finalizer", f'echo finalizer >> "{order}"\nprintf \'{{"outcome":"finalized"}}\\n\'\n')
         result = self.invoke(env=self.env | {
-            "GOVERNANCE_REFRESH_COMMAND": str(refresh),
-            "GOVERNANCE_FINALIZER_COMMAND": str(finalizer),
+            "GOVERNANCE_REFRESH_ARGV": json.dumps([str(refresh)]),
+            "GOVERNANCE_FINALIZER_ARGV": json.dumps([str(finalizer)]),
         })
         self.assertEqual(result.returncode, 0)
         self.assertEqual((self.directory / "counter").read_text(), "x")
@@ -96,7 +96,7 @@ class SystemdRunnerTest(unittest.TestCase):
         count = self.directory / "finalizer-count"
         finalizer = self.phase_script(
             "finalizer", f'echo x >> "{count}"\nprintf \'{{"outcome":"ineligible"}}\\n\'\n')
-        result = self.invoke(env=self.env | {"GOVERNANCE_FINALIZER_COMMAND": str(finalizer)})
+        result = self.invoke(env=self.env | {"GOVERNANCE_FINALIZER_ARGV": json.dumps([str(finalizer)])})
         self.assertEqual(result.returncode, 0)
         self.assertEqual(count.read_text().splitlines(), ["x"])
         self.assertEqual([phase["phase"] for phase in self.summary(result)["phases"]],
@@ -110,7 +110,7 @@ class SystemdRunnerTest(unittest.TestCase):
             f'printf reconciled > "{observation}"\n',
         )
         result = self.invoke(env=self.env | {
-            "GOVERNANCE_HOST_POST_WORKER_COMMAND": str(host),
+            "GOVERNANCE_HOST_POST_WORKER_ARGV": json.dumps([str(host)]),
         })
         self.assertEqual(result.returncode, 0)
         self.assertEqual(observation.read_text(), "reconciled")
@@ -122,13 +122,13 @@ class SystemdRunnerTest(unittest.TestCase):
     def test_host_post_worker_failure_overrides_worker_success(self):
         host = self.phase_script("host-post-worker", "exit 9\n")
         result = self.invoke(env=self.env | {
-            "GOVERNANCE_HOST_POST_WORKER_COMMAND": str(host),
+            "GOVERNANCE_HOST_POST_WORKER_ARGV": json.dumps([str(host)]),
         })
         self.assertEqual(result.returncode, 70)
         summary = self.summary(result)
         self.assertEqual(summary["classification"], "runner_internal_failure")
         self.assertEqual(summary["technical_error"], "host_post_worker failed")
-        self.assertEqual(summary["phases"][-1]["classification"], "failed")
+        self.assertEqual(summary["phases"][-1]["classification"], "child_nonzero")
 
     def phase_script(self, name, body):
         script = self.directory / name
@@ -141,8 +141,8 @@ class SystemdRunnerTest(unittest.TestCase):
                                     f'touch "{self.directory / "refreshed"}"\n')
         finalizer = self.phase_script("finalizer", 'printf \'{"outcome":"finalized"}\\n\'\n')
         result = self.invoke(env=self.env | {
-            "GOVERNANCE_REFRESH_COMMAND": str(refresh),
-            "GOVERNANCE_FINALIZER_COMMAND": str(finalizer),
+            "GOVERNANCE_REFRESH_ARGV": json.dumps([str(refresh)]),
+            "GOVERNANCE_FINALIZER_ARGV": json.dumps([str(finalizer)]),
         })
         self.assertEqual(result.returncode, 70)
         summary = self.summary(result)
@@ -213,6 +213,19 @@ class SystemdRunnerTest(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((self.directory / "counter").exists())
+
+    def test_phase_requires_structured_argv(self):
+        result = self.invoke(env=self.env | {"GOVERNANCE_REFRESH_ARGV": "/bin/true"})
+        self.assertEqual(result.returncode, 70)
+        self.assertEqual(self.summary(result)["classification"], "preflight_failure")
+
+    def test_missing_phase_executable_is_distinct_launch_failure(self):
+        result = self.invoke(env=self.env | {
+            "GOVERNANCE_REFRESH_ARGV": json.dumps([str(self.directory / "missing")]),
+        })
+        self.assertEqual(result.returncode, 70)
+        self.assertEqual(self.summary(result)["phases"][0]["classification"],
+                         "launch_failure")
 
     def test_source_has_no_retry_or_repository_mutation_commands(self):
         source = RUNNER.read_text()

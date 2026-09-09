@@ -97,10 +97,10 @@ artifacts. systemd and `flock` are Linux-specific mechanics; authority, states,
 gates, durable-state freshness, heartbeat priority, and result meanings remain
 portable contracts in `docs/AUTONOMY.md` and `docs/EXECUTION.md`.
 
-## GOV-009 phase hooks and local evidence
+## Recovery-safe phase hooks and local evidence
 
-`GOVERNANCE_REFRESH_COMMAND`, `GOVERNANCE_FINALIZER_COMMAND`, and
-`GOVERNANCE_HOST_POST_WORKER_COMMAND` configure the mechanical fresh-state
+`GOVERNANCE_REFRESH_ARGV`, `GOVERNANCE_FINALIZER_ARGV`, and
+`GOVERNANCE_HOST_POST_WORKER_ARGV` are JSON arrays of argv strings and configure the mechanical fresh-state
 boundary, finalizer pre-pass, and host post-worker boundary. A pre-pass JSON outcome of
 `finalized` requires another successful refresh before the runner invokes Codex
 once; failure or missing refresh fails closed. Worker completion does not invoke a
@@ -114,3 +114,27 @@ does not infer semantic eligibility. `GOVERNANCE_EVIDENCE_FILE` defaults to
 `.git/governance-runtime/runs.jsonl`, a mode-0600 append-only local JSONL stream.
 It records phase classifications, lock contention, Codex wall time, and total
 runner wall time without creating repository commits.
+
+
+## Host validation and publication models
+
+[`host_boundary.py`](host_boundary.py) supplies deterministic, provider-neutral
+primitives for the post-worker integration. Its Git validator resolves branch and
+HEAD and parses NUL-delimited status with all untracked files. An explicit path
+allowlist distinguishes expected changes from unexpected tracked or untracked
+paths; ref mismatches and ambiguous state fail closed. Its identity reconciliation
+preserves a durable branch/PR and permits derivation only for genuinely new work.
+Recovery treats durable `AI_REVIEW`, an existing PR, or an existing branch as more
+authoritative than incomplete local bookkeeping, so repeated wakes do not duplicate
+publication.
+
+The reference uses Model A: Codex may commit, push, and create/update the initial PR
+when capable, and the host verifies or narrowly completes missing publication.
+Model B is a permitted deployment fallback: Codex changes only the worktree and a
+credential-bearing host validates, commits, pushes, and creates the PR. Model A is
+more portable across Codex CLI/cloud workflows and preserves existing worker
+delivery behavior; Model B reduces worker credential and `.git` mutation exposure
+but requires a more complex provider-specific publisher. Both keep semantic
+coordination with the orchestrator/supervisor and must fail closed. This repository
+provides the validation primitives, not a provider-specific full publisher or the
+GOV-011 finalizer.

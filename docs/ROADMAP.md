@@ -4,16 +4,17 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Implement GOV-009 actor ownership, versioned role instructions, deterministic finalizer sequencing, and runtime timing evidence.
+- Harden runtime recovery, Git-state validation, and privilege boundaries through GOV-010.
 
 ## Next
 
-- Define reusable adoption and synchronization.
-
-Codex CLI and systemd reference implementations are not normative requirements of the portable autonomy protocol.
+- Complete the deterministic Gate-AI finalizer integration (GOV-011).
 
 ## Later
 
+- Define reusable adoption and synchronization.
 - Add proportionate CI/hygiene for governance validation.
 - Provide safe synchronization with consumers.
-- Evaluate other execution adapters, schedulers, and mechanical finalizers.
+- Evaluate other execution adapters and schedulers.
+
+Codex CLI and systemd reference implementations are not normative requirements of the portable autonomy protocol.
