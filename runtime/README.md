@@ -129,10 +129,12 @@ runner wall time without creating repository commits.
 ## Host validation and publication models
 
 [`gate_ai_finalizer.py`](gate_ai_finalizer.py) is the reference deterministic
-Gate-`AI` finalizer. Configure it as a JSON argv hook, for example:
+Gate-`AI` finalizer. Configure it as a JSON argv hook. The following
+`owner/repository`, PR `123`, and `GOV-XYZ` values are illustrative placeholders,
+not a live candidate identity:
 
 ```text
-GOVERNANCE_FINALIZER_ARGV=["/checkout/runtime/gate_ai_finalizer.py","--repository","owner/repository","--pr","18","--checkpoint","GOV-011"]
+GOVERNANCE_FINALIZER_ARGV=["/checkout/runtime/gate_ai_finalizer.py","--repository","owner/repository","--pr","123","--checkpoint","GOV-XYZ"]
 GOVERNANCE_FINALIZER_PROVIDER_ARGV=["/private/integration/github-finalizer-provider"]
 ```
 
