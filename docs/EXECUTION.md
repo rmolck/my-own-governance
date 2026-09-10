@@ -165,6 +165,32 @@ Every invocation must be distinguishable as exactly one of these outcomes:
 
 For Gate `AI`, durable `AI_SUPERVISOR: APPROVED` on the relevant HEAD is semantic completion and conditional merge authorization. If that HEAD still publishes `AI_REVIEW`, merge is not executable until a finalizer derives and validates the required strictly allowlisted commit that materializes `DONE`; it then merges the derived HEAD as the same operational finalization. Closure is not a second semantic transition or heartbeat and cannot select more work. The finalizer must verify every safeguard in `AUTONOMY.md`. A failed closure, mergeability, or checks precondition pauses execution without automatically recording `BLOCKED`, and approval never implicitly enables auto-merge.
 
+### Reference finalizer interface
+
+`runtime/gate_ai_finalizer.py --repository OWNER/REPOSITORY --pr NUMBER
+--checkpoint ID` is the deterministic implementation suitable for
+`GOVERNANCE_FINALIZER_ARGV`. `GOVERNANCE_FINALIZER_PROVIDER_ARGV` is a JSON argv
+array, never a shell command. On each call that provider reads one JSON request
+from standard input and returns one JSON object. The operation vocabulary is
+closed to `snapshot`, `create_closure`, and `merge`; mutation requests include an
+`expected_head`, and closure content is UTF-8 encoded as base64.
+
+Schema version 1 snapshots bind the repository, default branch, PR, checkpoint,
+branch, Gate, current and substantive HEADs, direct parent and changed paths,
+queue content, ordered exact-HEAD supervisor decisions, required checks and their
+HEAD-bound results, mergeability, merged state, and an explicit mechanically
+supplied `authority_clear` boundary. Missing or malformed fields fail closed.
+The provider is responsible for fresh durable reads and GitHub authentication;
+credentials never enter the snapshot or finalizer output. It must implement
+closure ref update and merge as compare-and-swap operations against
+`expected_head` and report a rejected comparison as `stale`.
+
+The executable emits exactly one bounded JSON object. Exit `0` covers
+`finalized`, mechanically `ineligible`, and `stale`; exit `65` is invalid input or
+evidence; exit `70` is a provider/API/publication failure. These are operational
+classifications and never rewrite the checkpoint to `BLOCKED` or
+`HUMAN_REQUIRED`.
+
 ## Portable exit semantics
 
 An adapter/runtime interface must distinguish, without parsing prose:
