@@ -4,7 +4,8 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Complete the deterministic Gate-AI finalizer integration (GOV-011).
+- Complete review and approval of the deterministic Gate-AI finalizer integration
+  (GOV-011).
 
 ## Later
 

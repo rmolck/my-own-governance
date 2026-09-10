@@ -128,6 +128,25 @@ runner wall time without creating repository commits.
 
 ## Host validation and publication models
 
+[`gate_ai_finalizer.py`](gate_ai_finalizer.py) is the reference deterministic
+Gate-`AI` finalizer. Configure it as a JSON argv hook. The following
+`owner/repository`, PR `123`, and `GOV-XYZ` values are illustrative placeholders,
+not a live candidate identity:
+
+```text
+GOVERNANCE_FINALIZER_ARGV=["/checkout/runtime/gate_ai_finalizer.py","--repository","owner/repository","--pr","123","--checkpoint","GOV-XYZ"]
+GOVERNANCE_FINALIZER_PROVIDER_ARGV=["/private/integration/github-finalizer-provider"]
+```
+
+The credential-bearing provider is deployment-specific. It reads one structured
+request per process, supplies fresh durable snapshots, and performs closure and
+merge only with the supplied expected HEAD. The finalizer validates exact
+approval binding, decision ordering, Gate and authority evidence, checks,
+mergeability, and the complete queue-only closure. It does not call Codex or
+select a candidate; argv fixes one candidate per invocation. See
+[`EXECUTION.md`](../docs/EXECUTION.md#reference-finalizer-interface) for the
+versioned protocol and exit classifications.
+
 [`host_boundary.py`](host_boundary.py) supplies deterministic, provider-neutral
 primitives for the post-worker integration. Its Git validator resolves branch and
 HEAD and parses NUL-delimited status with all untracked files. An explicit path
@@ -146,5 +165,4 @@ more portable across Codex CLI/cloud workflows and preserves existing worker
 delivery behavior; Model B reduces worker credential and `.git` mutation exposure
 but requires a more complex provider-specific publisher. Both keep semantic
 coordination with the orchestrator/supervisor and must fail closed. This repository
-provides the validation primitives, not a provider-specific full publisher or the
-GOV-011 finalizer.
+provides the validation primitives, not a provider-specific full publisher.

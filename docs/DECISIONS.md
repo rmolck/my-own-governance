@@ -177,3 +177,21 @@ fail closed on unexpected tracked or untracked paths, detached/mismatched refs, 
 ambiguous identity; it cannot infer semantic correctness or become a selector,
 supervisor, or post-worker finalizer. The reference exposes provider-neutral host
 primitives, while the full deterministic Gate-AI finalizer remains GOV-011 scope.
+
+## D-015 — Finalizer core and credential-bearing provider are separated
+
+**Decision:** Implement the Gate-`AI` finalizer as a deterministic validation core
+with a narrow versioned JSON protocol to a deployment-specific provider. The
+candidate identity is explicit argv input. The provider supplies fresh durable
+snapshots and implements only exact-HEAD closure creation and merge mechanics.
+
+**Rationale:** GitHub authentication and API transport are deployment concerns,
+while approval binding, closure validation, idempotency, and fail-closed outcomes
+must remain reusable, deterministic, and exhaustively testable without live
+destructive integration.
+
+**Consequences:** The core never selects a PR or calls an LLM. Missing authority,
+check, mergeability, identity, or HEAD evidence cannot be inferred. Provider
+failures are distinct from semantic ineligibility; credentials remain outside
+public inputs and output. A real deployment supplies the provider integration and
+its `GOVERNANCE_FINALIZER_PROVIDER_ARGV` configuration.

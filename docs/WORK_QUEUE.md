@@ -18,4 +18,6 @@ Operational coordination for this repository only. Requirements and governance r
 
 | GOV-010 | Harden runtime recovery, Git-state validation, and privilege boundaries ([issue #15](https://github.com/rmolck/my-own-governance/issues/15)). | GOV-001..GOV-009 `DONE`; explicit HUMAN OWNER authorization in issue #15. | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on substantive HEAD `7698a4f6103489e903c26184b7a0b9c1beb4e113`. |
 
+| GOV-011 | Implement the deterministic Gate-AI finalizer ([issue #18](https://github.com/rmolck/my-own-governance/issues/18)). | GOV-001..GOV-010 `DONE`; explicit HUMAN OWNER authorization in issue #18. | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on substantive HEAD `99ac90fc75e7c8afc85a09129cc164b2ef5ec6f6`. |
+
 Future work enters only with a concise objective, objective dependencies, one normative state, one gate, active work identity when present, and the last relevant durable result. Detailed requirements must be linked, not copied here.
