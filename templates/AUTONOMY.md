@@ -12,6 +12,13 @@ An identified legitimate active branch/PR may take precedence for continuity and
 
 ## Roles
 
+### AI ORCHESTRATOR
+
+Reconciles fresh durable state and frames authorized work. It may perform the
+bounded adaptive-roadmap reconciliation, planning, and admission described below,
+but cannot make HUMAN OWNER-reserved decisions or transfer consumer-local
+authority.
+
 ### HUMAN OWNER
 
 Owns product, observable behavior, significant architecture, data model, compatibility, security, persistence, data-loss risk, credentials, production, irreversible operations, external contracts, business rules, relevant UX, other material decisions, and every Gate `HUMAN` merge. For Gate `AI`, merge authorization is delegated only under the approval and finalization rules below. Changes to authority, merge policy, or security remain human-reserved; GOV-006 is authorized by the owner task that established it. The owner is not required for local, equivalent, easily reversible decisions.
@@ -52,6 +59,37 @@ preserves approval without another semantic review.
 ### GITHUB
 
 Provides durable persistence and traceability through branches, commits, PRs, comments/reviews, and checks. GITHUB is not an intelligent agent: it records evidence and coordination but neither decides what is authorized nor grants or expands the authority of HUMAN OWNER, CODEX WORKER, or AI SUPERVISOR.
+
+### FINALIZER
+
+Mechanically verifies existing Gate-`AI` authorization and may perform only the
+allowlisted closure and protected merge defined below. It has no roadmap,
+planning, admission, approval, repair, or work-selection authority.
+
+## Adaptive roadmap reconciliation and checkpoint admission
+
+`docs/ROADMAP.md` is informative direction, not operational state or execution
+authority. From fresh durable state, AI ORCHESTRATOR may conservatively reconcile
+only future, unmaterialized roadmap structure when changes are traceable to
+durable evidence, completed work, or approved decisions. It may not invent
+requirements, methodology, evidence, speculative work, or material choices;
+HUMAN OWNER-reserved ambiguity fails closed.
+
+An explicitly authorized semantic planning transition may decompose only the
+next currently valid phase into bounded checkpoints with dependencies, gates,
+evidence needs, completion criteria, limits, and ordering. Planning does not
+assign a state or authorize execution. Operational admission is separate: only
+a checkpoint whose dependencies and authority are satisfied enters
+`docs/WORK_QUEUE.md` and receives a truthful state. Other planned work remains
+outside that strictly operational queue.
+
+Materialized checkpoint scope, dependencies, Gate, and evidence contract cannot
+be silently rewritten; conflicting evidence requires explicit durable
+reconciliation. Runners and finalizers remain mechanical and cannot reconcile
+roadmaps, plan or admit checkpoints, or choose a next phase. Each consumer keeps
+authority over its own product, methodology, evidence, roadmap, queue, decisions,
+gates, and private context. This contract does not implement consumer
+synchronization or an autonomous planner, scheduler, or multi-repository selector.
 
 ## Portable execution boundaries
 
