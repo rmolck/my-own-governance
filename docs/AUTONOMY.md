@@ -18,6 +18,11 @@ Operations belong to the least-semantic actor capable of performing them safely.
 
 ChatGPT represents AI ORCHESTRATOR and AI SUPERVISOR as two logical roles by default. The orchestrator refreshes durable state, reconciles contradictions, selects or frames authorized work, and owns routine coordination and metadata for an existing GitHub PR when capable. Capability does not expand authority. Failure to change external GitHub metadata is reported as an access/capability failure and must never be disguised by a commit claiming that the external change occurred.
 
+The orchestrator also owns the conservative roadmap reconciliation and
+just-in-time planning contract below. That authority is repository-local and
+does not transfer product, methodology, evidence, or material decision authority
+away from the consumer repository or its HUMAN OWNER.
+
 ### HUMAN OWNER
 
 Owns product, observable behavior, significant architecture, data model, compatibility, security, persistence, data-loss risk, credentials, production, irreversible operations, external contracts, business rules, relevant UX, other material decisions, and every Gate `HUMAN` merge. For Gate `AI`, merge authorization is delegated only under the approval and finalization rules below. Changes to authority, merge policy, or security remain human-reserved; GOV-006 is authorized by the owner task that established it. The owner is not required for local, equivalent, easily reversible decisions.
@@ -62,6 +67,49 @@ Provides durable persistence and traceability through branches, commits, PRs, co
 ### FINALIZER
 
 The finalizer is a distinct mechanical component and may be completely deterministic without an LLM. It verifies existing durable authorization and may perform only the allowlisted closure and expected-HEAD-protected Gate-`AI` merge defined below. It has no semantic judgment, approval, repair, or work-selection authority. ChatGPT may temporarily execute these mechanics without combining logical roles or expanding authority.
+
+## Adaptive roadmap reconciliation and checkpoint admission
+
+`docs/ROADMAP.md` is informative medium-term direction, not an immutable plan,
+an execution queue, or authority to start work. From fresh durable state, the AI
+ORCHESTRATOR may conservatively reconcile **future, unmaterialized** roadmap
+structure when each change is traceable to durable evidence, completed work, or
+an already approved decision. It may reorder, split, combine, add, or remove
+future direction only as that evidence requires. It may not invent product
+requirements, methodology, evidence, speculative work, or a material choice.
+Any unresolved HUMAN OWNER-reserved choice fails closed at the applicable Gate
+`HUMAN` boundary.
+
+Roadmap planning and operational admission are distinct:
+
+1. **Planning/decomposition** may describe the minimum small, reviewable
+   checkpoints needed for only the next currently valid roadmap phase, including
+   dependencies, gates, evidence needs, completion criteria, scope limits, and
+   ordering. Planning a checkpoint does not assign it an operational state and
+   does not authorize its execution. Later phases remain informative and
+   undecomposed because subsequent evidence may change or remove them.
+2. **Admission/materialization** creates an operational checkpoint entry in
+   `docs/WORK_QUEUE.md`. Only a planned checkpoint whose objective dependencies
+   and authority are currently satisfied may be materialized, and only then may
+   it receive `READY` (or another truthful state required by current durable
+   facts). Planned but ineligible work remains outside the operational queue.
+
+Reconciliation, decomposition, and admission are semantic AI ORCHESTRATOR work
+and require an explicitly authorized checkpoint or transition; they are not an
+implicit side effect of completing another checkpoint. The queue stays minimal
+operational coordination and must link to requirements rather than duplicate a
+roadmap plan or product specification. Once a checkpoint is materialized—most
+critically while it is active—its objective, scope, dependencies, Gate, and
+evidence contract cannot be silently rewritten or discarded. Conflicting new
+evidence requires an explicit durable reconciliation under the existing state,
+authority, and review rules.
+
+RUNNER and FINALIZER remain mechanical: neither reconciles the roadmap,
+decomposes or admits checkpoints, chooses a next phase, or gains planning
+authority. Each consumer retains authority and durable truth for its own
+product, methodology, evidence, roadmap, queue, decisions, gates, and private
+context. This contract neither synchronizes consumers nor implements an
+autonomous planner, scheduler, or multi-repository work selector.
 
 ## Portable execution boundaries
 

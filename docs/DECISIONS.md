@@ -195,3 +195,29 @@ check, mergeability, identity, or HEAD evidence cannot be inferred. Provider
 failures are distinct from semantic ineligibility; credentials remain outside
 public inputs and output. A real deployment supplies the provider integration and
 its `GOVERNANCE_FINALIZER_PROVIDER_ARGV` configuration.
+
+## D-016 — Roadmaps adapt conservatively; operational admission is explicit
+
+**Decision:** Treat each consumer roadmap as informative medium-term direction.
+AI ORCHESTRATOR may conservatively reconcile future, unmaterialized direction
+from durable evidence, completed work, and approved decisions, and may decompose
+only the next currently valid phase through explicitly authorized semantic
+planning. Planning and operational admission are separate: a planned checkpoint
+has no state, and it enters `docs/WORK_QUEUE.md` only when its dependencies and
+authority are satisfied. Materialized checkpoint contracts require explicit
+durable reconciliation rather than silent semantic rewriting.
+
+**Rationale:** The `Innlab-idi/codex-autonomy-runner` ARCH-04,
+PLAN-FINALIZER-01, and `FINALIZER-*` sequence demonstrates bounded next-phase
+planning and delayed materialization, while the `Innlab-idi/vevi-exporter`
+P5-PREP/Phase 5 decomposition demonstrates that preparatory evidence can refine
+a broad phase into reviewable work. These are empirical design evidence only;
+neither repository supplies authority or a schema for this baseline.
+
+**Consequences:** `docs/WORK_QUEUE.md` remains strictly operational and the
+roadmap cannot create `READY` work. HUMAN OWNER-reserved ambiguity fails closed;
+Gate `AI` and Gate `HUMAN` remain separate. RUNNER and FINALIZER gain no planning
+authority. Consumers retain their product, methodology, evidence, requirements,
+decisions, gates, and private context. This decision does not implement consumer
+synchronization, an autonomous planner/scheduler, or finalizer text-format
+hardening.
