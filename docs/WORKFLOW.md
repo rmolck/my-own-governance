@@ -8,6 +8,13 @@ Read applicable `AGENTS.md`, project and decision documents, and the freshly ret
 
 Use the selection order in [`AUTONOMY.md`](AUTONOMY.md), based on fresh GitHub durable state. Continue an active legitimate PR before creating replacement work. Confirm dependencies, state, gate, and scope from [`WORK_QUEUE.md`](WORK_QUEUE.md); consult product and architecture documents for requirements.
 
+Roadmap reconciliation does not select executable work. When an authorized
+planning checkpoint applies, AI ORCHESTRATOR may decompose only the next valid
+phase under [`AUTONOMY.md`](AUTONOMY.md). Its proposed future checkpoints remain
+outside the operational queue until a separate admission action confirms that
+their dependencies and authority are satisfied; planning completion alone never
+makes them `READY`.
+
 ## 3. Work safely
 
 Move through a feature branch, never directly through `main`. Make the smallest coherent change for the checkpoint, keep affected durable documentation synchronized, and do not broaden authority because a command is technically possible. Do not destroy, reset, conceal, or rewrite existing work.
