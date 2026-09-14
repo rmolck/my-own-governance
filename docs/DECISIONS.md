@@ -207,12 +207,13 @@ has no state, and it enters `docs/WORK_QUEUE.md` only when its dependencies and
 authority are satisfied. Materialized checkpoint contracts require explicit
 durable reconciliation rather than silent semantic rewriting.
 
-**Rationale:** The `Innlab-idi/codex-autonomy-runner` ARCH-04,
-PLAN-FINALIZER-01, and `FINALIZER-*` sequence demonstrates bounded next-phase
-planning and delayed materialization, while the `Innlab-idi/vevi-exporter`
-P5-PREP/Phase 5 decomposition demonstrates that preparatory evidence can refine
-a broad phase into reviewable work. These are empirical design evidence only;
-neither repository supplies authority or a schema for this baseline.
+**Rationale:** The current available `Innlab-idi/codex-autonomy-runner` ARCH-04,
+PLAN-FINALIZER-01, and `FINALIZER-*` durable sequence provides empirical evidence
+for bounded next-phase planning and delayed materialization. This repository's
+pre-GOV-012 roadmap already records the validated `Innlab-idi/vevi-exporter`
+P5-PREP and later Phase 5 decomposition as additional empirical provenance for
+refining a broad phase into reviewable work. Neither external repository supplies
+authority or a schema for this baseline.
 
 **Consequences:** `docs/WORK_QUEUE.md` remains strictly operational and the
 roadmap cannot create `READY` work. HUMAN OWNER-reserved ambiguity fails closed;

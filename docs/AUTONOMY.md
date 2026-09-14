@@ -90,9 +90,10 @@ Roadmap planning and operational admission are distinct:
    undecomposed because subsequent evidence may change or remove them.
 2. **Admission/materialization** creates an operational checkpoint entry in
    `docs/WORK_QUEUE.md`. Only a planned checkpoint whose objective dependencies
-   and authority are currently satisfied may be materialized, and only then may
-   it receive `READY` (or another truthful state required by current durable
-   facts). Planned but ineligible work remains outside the operational queue.
+   and authority are currently satisfied may be materialized, and only then does
+   it receive `READY`. Approval or completion of the planning work does not admit
+   any proposed checkpoint automatically. Planned but ineligible work remains
+   outside the operational queue.
 
 Reconciliation, decomposition, and admission are semantic AI ORCHESTRATOR work
 and require an explicitly authorized checkpoint or transition; they are not an
