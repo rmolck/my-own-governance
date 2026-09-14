@@ -10,4 +10,5 @@ Use only `READY`, `WORKING`, `AI_REVIEW`, `AI_REWORK`, `HUMAN_REQUIRED`, `BLOCKE
 Do not add speculative or merely planned work to the table. A planning result
 does not admit its proposed checkpoints automatically: add one only through a
 separate admission action after its dependencies and authority are satisfied,
-then assign `READY`. An empty queue means the future worker returns `NO_OP`.
+then assign `READY` or another explicitly justified current state when durable
+facts require it. An empty queue means the future worker returns `NO_OP`.

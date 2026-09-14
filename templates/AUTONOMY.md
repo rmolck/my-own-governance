@@ -80,9 +80,10 @@ next currently valid phase into bounded checkpoints with dependencies, gates,
 evidence needs, completion criteria, limits, and ordering. Planning does not
 assign a state or authorize execution. Operational admission is separate: only
 a checkpoint whose dependencies and authority are satisfied enters
-`docs/WORK_QUEUE.md` and receives `READY`. Approval or completion of planning does
-not admit proposed checkpoints automatically. Other planned work remains outside
-that strictly operational queue.
+`docs/WORK_QUEUE.md` and receives `READY`, or another explicitly justified current
+state when durable facts require it. Approval or completion of planning does not
+admit proposed checkpoints automatically. Other planned work remains outside that
+strictly operational queue.
 
 Materialized checkpoint scope, dependencies, Gate, and evidence contract cannot
 be silently rewritten; conflicting evidence requires explicit durable
