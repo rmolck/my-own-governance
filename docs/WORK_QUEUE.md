@@ -20,6 +20,6 @@ Operational coordination for this repository only. Requirements and governance r
 
 | GOV-011 | Implement the deterministic Gate-AI finalizer ([issue #18](https://github.com/rmolck/my-own-governance/issues/18)). | GOV-001..GOV-010 `DONE`; explicit HUMAN OWNER authorization in issue #18. | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on substantive HEAD `99ac90fc75e7c8afc85a09129cc164b2ef5ec6f6`. |
 
-| GOV-012 | Formalize adaptive roadmap reconciliation and just-in-time checkpoint admission ([issue #20](https://github.com/rmolck/my-own-governance/issues/20)). | GOV-011 `DONE`; explicit HUMAN OWNER authorization in issue #20. | WORKING | AI | `work` / PR identity unavailable locally | AI rework addressed locally; durable publication and `AI_REVIEW` remain unverified. |
+| GOV-012 | Formalize adaptive roadmap reconciliation and just-in-time checkpoint admission ([issue #20](https://github.com/rmolck/my-own-governance/issues/20)). | GOV-011 `DONE`; explicit HUMAN OWNER authorization in issue #20. | AI_REVIEW | AI | `codex/implementar-gov-012-segun-el-issue-#20` / PR #21 | GOV-012 is published and awaits AI SUPERVISOR review on the resulting HEAD. |
 
 Future work enters only with a concise objective, objective dependencies, one normative state, one gate, active work identity when present, and the last relevant durable result. Detailed requirements must be linked, not copied here.
