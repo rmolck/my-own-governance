@@ -22,4 +22,6 @@ Operational coordination for this repository only. Requirements and governance r
 
 | GOV-012 | Formalize adaptive roadmap reconciliation and just-in-time checkpoint admission ([issue #20](https://github.com/rmolck/my-own-governance/issues/20)). | GOV-011 `DONE`; explicit HUMAN OWNER authorization in issue #20. | DONE | AI | — | `AI_SUPERVISOR: APPROVED` on substantive HEAD `87ca35238cc8b66c3db462c0745d1a8009dc6794`. |
 
+| GOV-013 | Define the reusable adoption and synchronization contract ([issue #22](https://github.com/rmolck/my-own-governance/issues/22)). | GOV-001..GOV-012 `DONE`; HUMAN OWNER authorized roadmap continuation/admission after GOV-012; [`DOCUMENTATION.md`](DOCUMENTATION.md); [`AUTONOMY.md`](AUTONOMY.md). | READY | AI | — | Admitted from the first post-GOV-012 roadmap direction; implementation/tooling and consumer adoption remain out of scope. |
+
 Future work enters only with a concise objective, objective dependencies, one normative state, one gate, active work identity when present, and the last relevant durable result. Detailed requirements must be linked, not copied here.
