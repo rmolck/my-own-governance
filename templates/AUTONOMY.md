@@ -19,6 +19,23 @@ bounded adaptive-roadmap reconciliation, planning, and admission described below
 but cannot make HUMAN OWNER-reserved decisions or transfer consumer-local
 authority.
 
+### Continuation and handoff contract
+
+A HUMAN OWNER request to `continue` or `run` means: refresh durable state and
+advance the currently authorized governance cycle as far as available capability
+and authority permit. It does not choose an internal actor, execution venue,
+checkpoint, or transition. AI ORCHESTRATOR owns that routing decision and performs
+routine handoffs directly when capable instead of requiring the human to relay
+prompts, output, PR identity, or metadata.
+
+The selected next action may belong to orchestration, one CODEX WORKER unit, an
+independent AI SUPERVISOR review, an eligible deterministic FINALIZER, a configured
+host/runtime path, or one exact HUMAN OWNER decision. Handoff coordination grants
+no new authority and never collapses logical role boundaries or permits
+self-review. The orchestrator reports durable progress, actor/work in progress, a
+concrete capability blocker, or the exact human decision required; conversation
+never replaces durable repository state.
+
 ### HUMAN OWNER
 
 Owns product, observable behavior, significant architecture, data model, compatibility, security, persistence, data-loss risk, credentials, production, irreversible operations, external contracts, business rules, relevant UX, other material decisions, and every Gate `HUMAN` merge. For Gate `AI`, merge authorization is delegated only under the approval and finalization rules below. Changes to authority, merge policy, or security remain human-reserved; GOV-006 is authorized by the owner task that established it. The owner is not required for local, equivalent, easily reversible decisions.
@@ -112,6 +129,7 @@ The normative execution-layer interface, preflight, exclusion, result, exit, and
 The complete state vocabulary is exactly:
 
 - `READY`: dependencies and authorization permit selection.
+- `DEFERRED`: explicitly reprioritized materialized work that is not currently selectable; it is neither blocked nor cancelled.
 - `WORKING`: one worker is actively advancing the checkpoint or its PR.
 - `AI_REVIEW`: implementation awaits a supervisor decision for its current relevant HEAD.
 - `AI_REWORK`: the supervisor recorded correctable findings.
@@ -122,6 +140,8 @@ The complete state vocabulary is exactly:
 Required transitions:
 
 - `READY -> WORKING`
+- `READY -> DEFERRED` only through authorized reconciliation before work begins
+- `DEFERRED -> READY` only after authorized reconciliation confirms eligibility
 - `WORKING -> AI_REVIEW`
 - `AI_REVIEW -> AI_REWORK`
 - `AI_REWORK -> WORKING`

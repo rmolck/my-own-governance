@@ -18,3 +18,6 @@ This is the reusable bootstrap contract for a repository mutation invocation.
 5. Do not self-approve, finalize, merge, cross Gate `HUMAN`, push to `main`, invent
    work/evidence, or expand authority. Return exactly `NO_OP` only after a valid
    fresh-state evaluation finds no authorized transition.
+6. Treat cloud, local-manual, and scheduled launches as execution venues for the
+   same invocation contract. Do not infer checkpoint priority or extra authority
+   from the venue or from a human continuation request.

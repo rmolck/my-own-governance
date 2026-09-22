@@ -13,7 +13,7 @@ Never invent evidence, validation, approval, state, or authority. Technical capa
 
 **GITHUB** is the non-intelligent persistence and traceability substrate for branches, commits, PRs, comments/reviews, and checks. It records evidence and coordination, but grants no authority and cannot expand any actor's authority.
 
-The only states are `READY`, `WORKING`, `AI_REVIEW`, `AI_REWORK`, `HUMAN_REQUIRED`, `BLOCKED`, and `DONE`; the only gates are Gate `AI` and Gate `HUMAN`. Follow `docs/AUTONOMY.md` for transitions and heartbeat priority. `docs/WORK_QUEUE.md` is operational state, not a product specification. Work on at most one checkpoint/PR per invocation. Never invent work. Return `NO_OP` only after a valid evaluation finds no authorized transition; a runtime/execution failure is not `NO_OP` and must not automatically make a checkpoint `BLOCKED`. Treat `main` as protected even when settings do not enforce it.
+The only states are `READY`, `DEFERRED`, `WORKING`, `AI_REVIEW`, `AI_REWORK`, `HUMAN_REQUIRED`, `BLOCKED`, and `DONE`; the only gates are Gate `AI` and Gate `HUMAN`. Follow `docs/AUTONOMY.md` for transitions and heartbeat priority. `docs/WORK_QUEUE.md` is operational state, not a product specification. Work on at most one checkpoint/PR per invocation. Never invent work. Return `NO_OP` only after a valid evaluation finds no authorized transition; a runtime/execution failure is not `NO_OP` and must not automatically make a checkpoint `BLOCKED`. Treat `main` as protected even when settings do not enforce it.
 <!-- END MY-OWN-GOVERNANCE MANAGED BLOCK -->
 
 ## Repository-local instructions

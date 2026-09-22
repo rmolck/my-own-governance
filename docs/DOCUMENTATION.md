@@ -8,6 +8,7 @@ Versioned documents are persistent project memory. Put each fact in one authorit
 | `PROJECT.md` | Purpose, boundaries, outcomes, and product-level context. |
 | `docs/AUTONOMY.md` | Normative roles, authority, states, gates, selection, and safety contract. |
 | `docs/EXECUTION.md` | Normative portable boundary for invocation, adapter, and scheduler/runtime mechanics. |
+| `docs/HOME_WORKFLOW.md` | Repository-local cloud-first continuation profile and manual local wake. |
 | `docs/ROADMAP.md` | Informative direction: now, next, later; not live checkpoint status. |
 | `docs/DECISIONS.md` | Consequential decisions, rationale, and consequences; not trivial implementation choices. |
 | `docs/WORK_QUEUE.md` | Minimal current checkpoint coordination; not requirements, architecture, or methodology. |

@@ -6,6 +6,12 @@ This document defines the minimum portable contract between the governance-aware
 
 One autonomous invocation, or heartbeat, asks: **does current durable state authorize an autonomous transition, and, if so, can the worker execute at most one checkpoint/PR?** A heartbeat is an opportunity to evaluate and possibly act; it is not an obligation to produce work.
 
+A manual request and a scheduled trigger are equivalent ways to offer this same
+invocation unit. Neither trigger names a checkpoint or desired transition, and
+neither changes heartbeat priority, authority, durable evidence, or result
+semantics. Scheduling is optional; periodic execution is not a prerequisite for
+autonomy.
+
 The governance-aware worker performs semantic evaluation and work selection according to `AUTONOMY.md`. A valid evaluation that finds no authorized transition returns `NO_OP`. It must not invent work merely to make an invocation productive.
 
 Each worker invocation is limited to:
@@ -230,6 +236,13 @@ An execution adapter, runner, scheduler, or runtime must not:
 ## Portability
 
 The contract can be implemented by combinations such as Codex CLI with systemd, another agent CLI with cron, GitHub Actions, Codex Automations, or future runtimes. These are informative examples only. No named agent, scheduler, operating system, lock primitive, or hosting provider is a normative dependency.
+
+An execution profile may prefer one capable venue (for example, a hosted worker)
+and fall back to a manually invoked local adapter/runtime. Routing is valid only
+when both paths consume the same fresh durable state and preserve this contract's
+invocation, role, publication, and result boundaries. A venue preference is not a
+semantic dependency and grants no selection, planning, approval, or finalization
+authority to an adapter, host, runner, or worker.
 
 ## Reference phase sequence and timing evidence
 
