@@ -23,6 +23,32 @@ just-in-time planning contract below. That authority is repository-local and
 does not transfer product, methodology, evidence, or material decision authority
 away from the consumer repository or its HUMAN OWNER.
 
+### Continuation and handoff contract
+
+A HUMAN OWNER request to `continue` or `run` expresses one intent: refresh the
+durable state and advance the currently authorized governance cycle as far as
+available capability and authority permit. It does not select an internal actor,
+execution venue, checkpoint, or transition. The AI ORCHESTRATOR owns that routing
+decision after refreshing the published baseline, queue, active branches/PRs,
+checks, discussion, and current HEAD identities.
+
+The orchestrator may perform a routine handoff directly when its current interface
+has the required authorized capability. Depending on fresh state, that can mean
+performing orchestration itself; starting or continuing one CODEX WORKER unit;
+reviewing one already review-ready PR in the distinct AI SUPERVISOR role; invoking
+an eligible deterministic FINALIZER or configured local host/runtime path; or
+asking the HUMAN OWNER for one exact reserved decision or unavailable operation.
+It must not ask the human to relay prompts, outputs, PR identities, or routine
+metadata that it can transfer accurately itself. A handoff is coordination, not a
+new state transition or grant of authority, and combining interfaces does not
+collapse the logical roles or permit self-review.
+
+After handling the request, report exactly one unambiguous current outcome:
+durable progress completed (with its durable identity), the actor/work now in
+progress, a concrete capability blocker, or the exact HUMAN OWNER decision
+required. Conversation may initiate and summarize this cycle but never becomes
+its state machine or evidence store.
+
 ### HUMAN OWNER
 
 Owns product, observable behavior, significant architecture, data model, compatibility, security, persistence, data-loss risk, credentials, production, irreversible operations, external contracts, business rules, relevant UX, other material decisions, and every Gate `HUMAN` merge. For Gate `AI`, merge authorization is delegated only under the approval and finalization rules below. Changes to authority, merge policy, or security remain human-reserved; GOV-006 is authorized by the owner task that established it. The owner is not required for local, equivalent, easily reversible decisions.

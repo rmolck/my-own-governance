@@ -222,3 +222,24 @@ authority. Consumers retain their product, methodology, evidence, requirements,
 decisions, gates, and private context. This decision does not implement consumer
 synchronization, an autonomous planner/scheduler, or finalizer text-format
 hardening.
+
+## D-017 — One continuation intent with profile-level cloud-first routing
+
+**Decision:** Give the HUMAN OWNER one `continue`/`run` intent and make AI
+ORCHESTRATOR responsible for selecting and, when capable, performing the next
+authorized handoff from fresh durable state. Keep the portable contract
+provider-neutral. In this repository's home/developer profile, prefer a capable
+Codex Cloud worker, retain one manually invoked local runtime wake as the
+first-class alternate, and make periodic scheduling optional.
+
+**Rationale:** The pilot evidence recorded by issue #24 shows that the mechanical
+wake boundary is sufficiently separate from interaction routing. Requiring the
+owner to remember the next internal actor or relay prompts and PR identities adds
+fragile conversational state without adding authority or safety.
+
+**Consequences:** Cloud, manual-local, and scheduled venues consume the same queue,
+priority, gate, publication, review, and finalization semantics. The orchestrator
+reports durable progress, work in progress, a precise capability blocker, or the
+exact reserved human decision. Routing cannot grant planning, approval, or broader
+mutation authority to CODEX WORKER, HOST, RUNNER, or FINALIZER; logical role
+separation and exact-HEAD evidence remain required.

@@ -1,5 +1,20 @@
 # Workflow
 
+## Human continuation entry point
+
+The home/developer interaction has one continuation intent: `continue` (or
+`run`). It asks AI ORCHESTRATOR to establish fresh durable truth and advance the
+authorized cycle as far as its current capabilities and authority permit. The
+human does not choose whether the next internal action is planning, worker
+execution, review, rework, finalization, a local wake, or an owner decision.
+
+AI ORCHESTRATOR selects that handoff under [`AUTONOMY.md`](AUTONOMY.md), performs
+routine transfers directly when capable, and finishes with one concrete outcome:
+durable progress and identity, actor/work in progress, capability blocker, or the
+exact reserved human decision. GitHub remains the coordination journal; a chat
+handoff or status message is not evidence that a branch, PR, comment, check, or
+queue transition exists.
+
 ## 1. Establish current truth
 
 Read applicable `AGENTS.md`, project and decision documents, and the freshly retrieved published baseline. Inspect repository identity, HEAD, branch, status, remotes, worktree, active branches/PRs, checks, and review discussion. Repository state is durable; conversation is not. Preserve uncommitted and committed work and stop when a material contradiction cannot be reconciled safely.
@@ -34,3 +49,11 @@ correctable findings as `AI_REWORK`, uses `HUMAN_REQUIRED` only for an actual
 owner-reserved decision, and publishes no decision when tooling prevents a
 trustworthy review. It verifies HEAD both before reviewing and immediately
 before commenting; a changed HEAD must be reviewed anew.
+
+## 6. Home execution profile
+
+The provider-neutral steps above do not choose an agent host. The repository's
+home/developer profile is defined in [`HOME_WORKFLOW.md`](HOME_WORKFLOW.md): it
+prefers a capable Codex Cloud worker, retains one manual local wake over the same
+state machine, and treats scheduling as optional. Venue selection changes only
+the execution path, never checkpoint eligibility, role authority, or evidence.

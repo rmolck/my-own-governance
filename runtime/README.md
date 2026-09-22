@@ -62,6 +62,11 @@ heartbeat still evaluates fresh durable state normally.
 
 ## Manual runner use and locking
 
+This is the home profile's first-class local alternate to cloud-first worker
+execution. Starting it manually and starting the same service from a timer offer
+the same single governance wake; neither selects work or changes authority. The
+timer is optional.
+
 With the same environment configured, invoke the runtime without systemd:
 
 ```bash
