@@ -132,6 +132,7 @@ The normative execution-layer interface, preflight, exclusion, result, exit, and
 The complete state vocabulary is exactly:
 
 - `READY`: dependencies and authorization permit selection.
+- `DEFERRED`: a materialized but not active checkpoint has been explicitly reprioritized by an authorized roadmap reconciliation and is not currently selectable; this is not an objective blocker or a cancellation.
 - `WORKING`: one worker is actively advancing the checkpoint or its PR.
 - `AI_REVIEW`: implementation awaits a supervisor decision for its current relevant HEAD.
 - `AI_REWORK`: the supervisor recorded correctable findings.
@@ -142,6 +143,8 @@ The complete state vocabulary is exactly:
 Required transitions:
 
 - `READY -> WORKING`
+- `READY -> DEFERRED` only through explicit authorized roadmap reconciliation before work begins
+- `DEFERRED -> READY` only after a later authorized reconciliation confirms its dependencies, priority, and authority permit selection
 - `WORKING -> AI_REVIEW`
 - `AI_REVIEW -> AI_REWORK`
 - `AI_REWORK -> WORKING`
@@ -210,6 +213,8 @@ invocation processes at most one checkpoint/PR in this order:
 6. `AI_REVIEW` without a new decision: `NO_OP`.
 7. `HUMAN_REQUIRED`: do not cross it; only clearly permitted independent work may proceed.
 8. `BLOCKED`: revalidate its cause; if it persists, `NO_OP`.
+
+`DEFERRED` is never selected by a worker wake. It returns to `READY` only through a later authorized roadmap reconciliation; it must not be treated as `BLOCKED`, `NO_OP`, or implicit cancellation.
 
 The finalizer never selects another checkpoint. A finalized PR and one later
 worker transition may share a wake only after the runner refreshes durable state;
