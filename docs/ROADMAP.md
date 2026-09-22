@@ -4,11 +4,7 @@ This is informative direction, not operational state. Current checkpoint state b
 
 ## Now
 
-- Define cloud-first orchestration handoffs and a manual local wake (GOV-014).
-
-## Deferred
-
-- Define the reusable adoption and synchronization contract (GOV-013) after GOV-014 establishes the home/developer handoff model.
+- Define the reusable adoption and synchronization contract (GOV-013), now that GOV-014 has established the home/developer handoff model.
 
 ## Later
 
