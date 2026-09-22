@@ -18,4 +18,9 @@ The only states are `READY`, `DEFERRED`, `WORKING`, `AI_REVIEW`, `AI_REWORK`, `H
 
 ## Repository-local instructions
 
-During adoption, replace this paragraph with verified local commands, constraints, and document pointers. Keep all local content outside the managed markers; synchronizers must preserve it. Do not record secrets or private operational details.
+During adoption, replace this paragraph with verified local commands,
+constraints, document pointers, and an unambiguous durable record of the
+baseline repository identity and full adopted commit object ID. Keep all local
+content outside the managed markers; synchronizers must preserve it. Do not
+record secrets or private operational details. Follow the baseline's
+`sync/README.md` for the portable adoption and synchronization contract.

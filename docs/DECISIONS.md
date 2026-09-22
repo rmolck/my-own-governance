@@ -243,3 +243,23 @@ reports durable progress, work in progress, a precise capability blocker, or the
 exact reserved human decision. Routing cannot grant planning, approval, or broader
 mutation authority to CODEX WORKER, HOST, RUNNER, or FINALIZER; logical role
 separation and exact-HEAD evidence remain required.
+
+## D-018 — Consumer synchronization is revision-pinned managed-block replacement
+
+**Decision:** Define adoption as a consumer-reviewed incorporation of one full,
+immutable baseline commit identity plus an exact managed agent block, and define
+synchronization as a later proposal to replace only that block and its durable
+revision record. The baseline owns common content only inside the markers; the
+consumer owns all content outside them and all consumer product, methodology,
+evidence, commands, operational state, and acceptance authority.
+
+**Rationale:** Deterministic provenance and a narrow replacement boundary make
+common policy updates reviewable without treating a baseline as an upstream for
+consumer truth or allowing best-effort text manipulation to destroy local work.
+
+**Consequences:** Missing, duplicated, reversed, nested, or ambiguous markers and
+local managed-block divergence fail visibly before mutation. Successful updates
+must preserve unmanaged bytes, bind content and provenance to the same full
+commit, and become no-ops when repeated against unchanged synchronized input.
+This decision defines semantics only: it authorizes no synchronizer, consumer
+mutation, scheduling, automatic PR or merge, or cross-repository authority.
