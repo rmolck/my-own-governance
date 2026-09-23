@@ -13,14 +13,22 @@ Versioned documents are persistent project memory. Put each fact in one authorit
 | `docs/DECISIONS.md` | Consequential decisions, rationale, and consequences; not trivial implementation choices. |
 | `docs/WORK_QUEUE.md` | Minimal current checkpoint coordination; not requirements, architecture, or methodology. |
 | `adapter/README.md` | Codex CLI reference adapter input/output, operational usage, exit semantics, and responsibility boundary. |
+| `sync/README.md` | Portable adoption and synchronization semantics, provenance, validation, and authority boundaries. |
 | PR and commits | Reviewable change evidence and discussion tied to concrete Git objects. |
 
 ## Managed agent block
 
-The common block between the exact managed markers is replaced as a unit during adoption/synchronization. It must be sufficiently self-contained for a consumer whose agent has no memory of this repository. Consumer-specific commands, constraints, and facts remain outside the markers and must not be overwritten.
+The common block between the exact managed markers is replaced as a unit during
+adoption/synchronization. It must be sufficiently self-contained for a consumer
+whose agent has no memory of this repository. Consumer-specific commands,
+constraints, and facts remain outside the markers and must not be overwritten.
+The normative replacement, revision-provenance, divergence, fail-closed marker,
+idempotency, and no-op rules are in [`sync/README.md`](../sync/README.md).
 
 ## Writing durable truth
 
 State evidence separately from inference. Link requirements to their canonical document. Update documentation in the same change when behavior or authority changes. Never use a queue entry as a second product specification. Never store secrets, personal/private data, sensitive operations, or unnecessary repository details in public documentation or history.
 
-Templates contain explicit adoption instructions. Consumers replace template guidance with verified local facts and record the adopted baseline revision; they do not fabricate missing information.
+Templates contain explicit adoption instructions. Consumers replace template
+guidance with verified local facts and record the baseline repository identity
+and full adopted commit object ID; they do not fabricate missing information.
