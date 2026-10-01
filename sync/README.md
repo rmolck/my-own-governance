@@ -132,3 +132,54 @@ it never approves itself. A future implementation checkpoint may choose a
 transport or interface and add stronger checks, but it must preserve this
 contract's fail-closed boundaries and cannot derive authority from technical
 capability.
+
+## Reference local candidate tool
+
+`consumer_sync.py` is a provider-neutral reference implementation of this
+contract. It operates only on explicit local inputs and never selects a consumer,
+commit, branch, or network location. Its baseline input must be a local Git
+repository, and both the recorded and proposed revisions must be full commit
+object IDs that resolve to themselves. The implementation reads
+`templates/AGENTS.md` from those commit objects rather than from the baseline
+working tree.
+
+The reference implementation uses a deliberately narrow JSON adoption record:
+
+```json
+{
+  "baseline_repository": "https://example.invalid/owner/baseline.git",
+  "baseline_revision": "0123456789abcdef0123456789abcdef01234567"
+}
+```
+
+The repository identity is an explicit opaque string and must exactly equal the
+tool's `--baseline-identity` argument. The record path defaults to
+`.my-own-governance.json`; `--record` may select another relative path inside the
+consumer root. The record contains exactly the two string fields shown above so
+that provenance cannot be inferred from ambiguous consumer-local data.
+
+Dry-run is the default and emits a JSON result containing the old and proposed
+full revisions, status, changed paths, and unified diff:
+
+```sh
+python sync/consumer_sync.py \
+  --baseline /path/to/local/baseline \
+  --baseline-identity https://example.invalid/owner/baseline.git \
+  --revision 0123456789abcdef0123456789abcdef01234567 \
+  --consumer /path/to/local/consumer
+```
+
+An explicit `--write-candidate /new/path` publishes a complete isolated
+candidate tree at a destination that must not already exist and must be outside
+the consumer tree. The tool first builds and validates the candidate in a
+temporary sibling directory, verifies that rerunning synchronization against it
+is a no-op, and only then atomically renames that directory into place. It never
+modifies the input consumer tree. Validation failures return exit status `2`,
+emit a JSON failure, remove the unpublished temporary candidate, and do not
+write a partial destination.
+
+Producing a candidate is not authorization to modify a real consumer, commit,
+push, open or merge a pull request, or approve the resulting diff. Consumer
+governance must separately authorize and review any use of candidate content.
+This local tool is a reference implementation, not a normative requirement of
+the portable governance protocol.
